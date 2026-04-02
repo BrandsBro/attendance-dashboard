@@ -15,25 +15,38 @@ export default function EmployeeDetail({ employee: emp, onClose }) {
         </div>
 
         <div className="detail-stats">
-          {[
-            { label: 'Days',     value: emp.workingDays,             color: '' },
-            { label: 'Presence', value: fmtMinutes(emp.totalPresenceMinutes),  color: '' },
-            { label: 'Late',     value: fmtMinutes(emp.totalLateMinutes),      color: 'amber' },
-            { label: 'Overtime', value: fmtMinutes(emp.totalOvertimeMinutes),  color: 'blue' },
-          ].map(p => (
-            <div key={p.label} className={`detail-pill ${p.color ? `detail-pill-${p.color}` : ''}`}>
-              <div className="pill-value">{p.value}</div>
-              <div className="pill-label">{p.label}</div>
-            </div>
-          ))}
+          <div className="detail-pill">
+            <div className="pill-value">{emp.workingDays}</div>
+            <div className="pill-label">Days</div>
+          </div>
+          <div className="detail-pill">
+            <div className="pill-value">{fmtMinutes(emp.totalPresenceMinutes)}</div>
+            <div className="pill-label">Presence</div>
+          </div>
+          <div className="detail-pill detail-pill-amber">
+            <div className="pill-value">{emp.lateDays ?? 0} days</div>
+            <div className="pill-label">Late days</div>
+          </div>
+          <div className="detail-pill detail-pill-amber">
+            <div className="pill-value">{fmtMinutes(emp.totalLateMinutes)}</div>
+            <div className="pill-label">Total late time</div>
+          </div>
+          <div className="detail-pill detail-pill-blue">
+            <div className="pill-value">{fmtMinutes(emp.totalOvertimeMinutes)}</div>
+            <div className="pill-label">Total overtime</div>
+          </div>
         </div>
 
         <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Date</th><th>In</th><th>Out</th>
-                <th>Presence</th><th>Late</th><th>Overtime</th>
+                <th>Date</th>
+                <th>In</th>
+                <th>Out</th>
+                <th>Presence</th>
+                <th>Late</th>
+                <th>Overtime</th>
               </tr>
             </thead>
             <tbody>

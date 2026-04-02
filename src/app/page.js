@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { useAttendanceData } from '@/hooks/useAttendanceData'
-import UploadSection  from '@/components/UploadSection'
-import ScheduleConfig from '@/components/ScheduleConfig'
-import StatsOverview  from '@/components/StatsOverview'
-import SummaryTable   from '@/components/SummaryTable'
-import EmployeeDetail from '@/components/EmployeeDetail'
+import UploadSection         from '@/components/UploadSection'
+import SelectedSchedulePanel from '@/components/SelectedSchedulePanel'
+import StatsOverview         from '@/components/StatsOverview'
+import SummaryTable          from '@/components/SummaryTable'
+import EmployeeDetail        from '@/components/EmployeeDetail'
 
 export default function Home() {
   const {
@@ -15,7 +15,26 @@ export default function Home() {
   } = useAttendanceData()
 
   const [selectedEmployee, setSelectedEmployee] = useState(null)
+  const [selectedIds,      setSelectedIds]      = useState(new Set())
   const loading = status === 'loading'
+
+  function toggleSelect(emp, checked) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (checked) next.add(emp.userId)
+      else next.delete(emp.userId)
+      return next
+    })
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set())
+  }
+
+  const selectedEmployees = summary?.employees.filter(e => selectedIds.has(e.userId)) ?? []
+  const liveEmployee = selectedEmployee
+    ? summary?.employees.find(e => e.userId === selectedEmployee.userId) ?? selectedEmployee
+    : null
 
   return (
     <main className="page">
@@ -35,18 +54,35 @@ export default function Home() {
 
       <UploadSection onFile={processFile} onSheetUrl={processSheetUrl} loading={loading} />
 
+      {selectedEmployees.length > 0 && (
+        <SelectedSchedulePanel
+          employees={selectedEmployees}
+          schedules={schedules}
+          onUpdate={updateSchedule}
+          onClear={clearSelection}
+        />
+      )}
+
       {loading && <div className="loading-banner">Processing attendance data…</div>}
 
       {summary && (
         <>
-          <ScheduleConfig employees={summary.employees} schedules={schedules} onUpdate={updateSchedule} />
           <StatsOverview summary={summary} />
-          <SummaryTable summary={summary} onSelectEmployee={setSelectedEmployee} />
+          <SummaryTable
+            summary={summary}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onSelectEmployee={setSelectedEmployee}
+            onClearSelection={clearSelection}
+          />
         </>
       )}
 
-      {selectedEmployee && (
-        <EmployeeDetail employee={selectedEmployee} onClose={() => setSelectedEmployee(null)} />
+      {liveEmployee && (
+        <EmployeeDetail
+          employee={liveEmployee}
+          onClose={() => setSelectedEmployee(null)}
+        />
       )}
     </main>
   )
