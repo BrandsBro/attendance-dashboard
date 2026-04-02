@@ -244,3 +244,103 @@ body {
 .presence-cell { display: flex; flex-direction: column; gap: 2px; }
 .presence-cell .presence-time { font-weight: 500; }
 .presence-cell .presence-days { font-size: 12px; color: var(--text-muted); }
+
+/* ── Wide layout ─────────────────────────────────────────── */
+.page { max-width: 1600px; }
+
+/* ── Schedule panel ──────────────────────────────────────── */
+.sp-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 12px; }
+.sp-body { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.presets-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--border); }
+.preset-btn { padding: 5px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 100px; font-size: 13px; cursor: pointer; color: var(--text); transition: background .15s, border-color .15s; }
+.preset-btn:hover { background: var(--blue-light); border-color: var(--blue); color: var(--blue-dark); }
+
+/* ── Grace options ───────────────────────────────────────── */
+.grace-options { display: flex; gap: 8px; flex-wrap: wrap; }
+.grace-btn { padding: 6px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 100px; font-size: 13px; cursor: pointer; color: var(--text); transition: background .15s; }
+.grace-btn:hover { background: var(--blue-light); border-color: var(--blue); color: var(--blue-dark); }
+.grace-btn-active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.grace-btn-active:hover { background: var(--blue); color: #fff; }
+
+/* ── Holiday calendar ────────────────────────────────────── */
+.holiday-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.holiday-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--amber-light); border: 1px solid var(--amber); border-radius: 100px; font-size: 13px; color: var(--amber-dark); }
+.holiday-remove { background: none; border: none; cursor: pointer; color: var(--amber-dark); font-size: 12px; padding: 0; line-height: 1; }
+
+/* ── Day badges ──────────────────────────────────────────── */
+.day-badge { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 100px; font-size: 11px; }
+.day-holiday { background: var(--amber-light); color: var(--amber-dark); }
+.day-weekend { background: var(--bg); color: var(--text-muted); }
+.row-off td { opacity: .5; }
+
+/* ── Shift & grace badges in detail ─────────────────────── */
+.shift-badge { display: inline-block; margin-left: 8px; padding: 2px 8px; background: var(--blue-light); color: var(--blue-dark); border-radius: 100px; font-size: 12px; }
+.grace-badge { display: inline-block; margin-left: 6px; padding: 2px 8px; background: var(--green-light); color: var(--green-dark); border-radius: 100px; font-size: 12px; }
+
+.filter-group { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.filter-group:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+.filter-group-label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 8px; }
+
+.filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.filter-tab { padding: 6px 16px; border: 1px solid var(--border); background: var(--bg); border-radius: 100px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: all .15s; }
+.filter-tab:hover { border-color: var(--blue); color: var(--blue); }
+.filter-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 500; }
+
+.filter-content { padding: 12px 0 4px; }
+
+.manual-add-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); margin-top: 4px; margin-bottom: 4px; flex-wrap: wrap; }
+.edit-time-cell { display: flex; align-items: center; gap: 6px; }
+.edit-time-display { min-width: 60px; }
+.edit-time-input { width: 110px !important; font-size: 12px; padding: 3px 6px; }
+.btn-remove { background: none; border: none; color: var(--red); font-size: 12px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.btn-remove:hover { background: var(--red-light); }
+.day-manual { background: var(--green-light); color: var(--green-dark); }
+
+.editable-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all .15s;
+  font-size: 14px;
+}
+.editable-time:hover {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  color: var(--blue-dark);
+}
+.editable-time-empty {
+  color: var(--text-subtle);
+  font-style: italic;
+}
+.edit-pencil {
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.editable-time:hover .edit-pencil { opacity: 1; }
+
+.inline-time-input {
+  padding: 3px 8px;
+  border: 2px solid var(--blue);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  width: 120px;
+}
+
+.th-hint {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-subtle);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+.day-edited { background: var(--blue-light); color: var(--blue-dark); }

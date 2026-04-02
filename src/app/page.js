@@ -1,17 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { useAttendanceData } from '@/hooks/useAttendanceData'
-import UploadSection         from '@/components/UploadSection'
-import SelectedSchedulePanel from '@/components/SelectedSchedulePanel'
-import StatsOverview         from '@/components/StatsOverview'
-import SummaryTable          from '@/components/SummaryTable'
-import EmployeeDetail        from '@/components/EmployeeDetail'
+import { useAttendanceData }     from '@/hooks/useAttendanceData'
+import UploadSection             from '@/components/UploadSection'
+import SelectedSchedulePanel     from '@/components/SelectedSchedulePanel'
+import StatsOverview             from '@/components/StatsOverview'
+import SummaryTable              from '@/components/SummaryTable'
+import EmployeeDetail            from '@/components/EmployeeDetail'
+import HolidayCalendar           from '@/components/HolidayCalendar'
 
 export default function Home() {
   const {
-    summary, schedules, status, errorMsg,
-    processFile, processSheetUrl, updateSchedule, clearData,
+    summary, schedules, holidays, status, errorMsg,
+    processFile, processSheetUrl, updateSchedule,
+    updateLogoutOverride, updateHolidays, clearData,
   } = useAttendanceData()
 
   const [selectedEmployee, setSelectedEmployee] = useState(null)
@@ -27,9 +29,7 @@ export default function Home() {
     })
   }
 
-  function clearSelection() {
-    setSelectedIds(new Set())
-  }
+  function clearSelection() { setSelectedIds(new Set()) }
 
   const selectedEmployees = summary?.employees.filter(e => selectedIds.has(e.userId)) ?? []
   const liveEmployee = selectedEmployee
@@ -54,6 +54,10 @@ export default function Home() {
 
       <UploadSection onFile={processFile} onSheetUrl={processSheetUrl} loading={loading} />
 
+      {/* Holiday calendar — always visible */}
+      <HolidayCalendar holidays={holidays} onUpdate={updateHolidays} />
+
+      {/* Schedule panel — only when employees selected */}
       {selectedEmployees.length > 0 && (
         <SelectedSchedulePanel
           employees={selectedEmployees}
@@ -81,6 +85,8 @@ export default function Home() {
       {liveEmployee && (
         <EmployeeDetail
           employee={liveEmployee}
+          schedules={schedules}
+          onLogoutOverride={updateLogoutOverride}
           onClose={() => setSelectedEmployee(null)}
         />
       )}
