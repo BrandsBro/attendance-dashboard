@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as XLSX from 'xlsx'
 import { useAttendanceData }     from '@/hooks/useAttendanceData'
 import UploadSection             from '@/components/UploadSection'
 import SelectedSchedulePanel     from '@/components/SelectedSchedulePanel'
@@ -36,6 +37,35 @@ export default function Home() {
     ? summary?.employees.find(e => e.userId === selectedEmployee.userId) ?? selectedEmployee
     : null
 
+  // -------- Export to Excel --------
+function handleDownloadExcel() {
+  if (!summary) {
+    alert('No data to export')
+    return
+  }
+
+  try {
+    const rows = summary.employees.map(emp => {
+      const mins = emp.totalOvertimeMinutes || 0
+      const overtimeStr = mins > 0 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : '—'
+
+      return {
+        'Name': emp.name,
+        'Presence (days)': emp.workingDays,
+        'Late (days)': emp.lateDays,
+        'Overtime': overtimeStr,
+      }
+    })
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Employee Summary')
+    XLSX.writeFile(wb, `employee_summary_${new Date().toISOString().slice(0, 10)}.xlsx`)
+  } catch (err) {
+    console.error('Export error:', err)
+    alert('Export failed: ' + err.message)
+  }
+}
   return (
     <main className="page">
       <header className="page-header">
@@ -43,9 +73,18 @@ export default function Home() {
           <h1 className="page-title">Attendance Dashboard</h1>
           <p className="page-sub">Brands Bro LLC</p>
         </div>
-        {summary && (
-          <button className="btn-danger-outline" onClick={clearData}>Clear Data</button>
-        )}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {summary && (
+            <>
+              <button className="btn-primary" onClick={handleDownloadExcel}>
+                📥 Download Excel Report
+              </button>
+              <button className="btn-danger-outline" onClick={clearData}>
+                Clear Data
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
       {status === 'error' && (
@@ -54,10 +93,8 @@ export default function Home() {
 
       <UploadSection onFile={processFile} onSheetUrl={processSheetUrl} loading={loading} />
 
-      {/* Holiday calendar — always visible */}
       <HolidayCalendar holidays={holidays} onUpdate={updateHolidays} />
 
-      {/* Schedule panel — only when employees selected */}
       {selectedEmployees.length > 0 && (
         <SelectedSchedulePanel
           employees={selectedEmployees}

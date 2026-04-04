@@ -19,6 +19,7 @@ export function calculateStats(records, schedules, source, sourceLabel, holidays
     const key = r.userId || r.name
     if (!byEmployee.has(key)) byEmployee.set(key, [])
     byEmployee.get(key).push(r)
+    // track global date range
   }
 
   const employees = []
@@ -26,12 +27,13 @@ export function calculateStats(records, schedules, source, sourceLabel, holidays
   let globalMax = new Date(-8640000000000000)
 
   for (const [userId, empRecords] of byEmployee) {
-    const sample    = empRecords[0]
-    const schedule  = schedules[userId] ?? schedules[sample.name] ?? null
-    const loginMin  = schedule ? scheduleMinutes(schedule.scheduledLoginTime)  : null
-    const logoutMin = schedule ? scheduleMinutes(schedule.scheduledLogoutTime) : null
-    const grace     = schedule?.gracePeriodMinutes ?? 0
-    const empEdits  = timeEdits[userId] ?? {}
+    const sample = empRecords[0]
+    const schedule = schedules[userId] ?? schedules[sample.name] ?? null
+    const defaultLoginMin = schedule ? scheduleMinutes(schedule.scheduledLoginTime) : null
+    const defaultLogoutMin = schedule ? scheduleMinutes(schedule.scheduledLogoutTime) : null
+    const grace = schedule?.gracePeriodMinutes ?? 0
+    const empEdits = timeEdits[userId] ?? {}
+    const dayOverrides = schedule?.dayOverrides ?? {}   // { "2025-01-15": { login: "14:00", logout: "22:00" } }
 
     const byDay = new Map()
     for (const r of empRecords) {
@@ -48,18 +50,26 @@ export function calculateStats(records, schedules, source, sourceLabel, holidays
 
     for (const [date, dayRecs] of [...byDay.entries()].sort()) {
       const dayOfWeek = new Date(date + 'T12:00:00').getDay()
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+      const isWeekend = dayOfWeek === 0   // Sunday only
       const isHoliday = holidaySet.has(date)
-      const edit      = empEdits[date] ?? {}
+      const edit = empEdits[date] ?? {}
 
-      const sorted  = [...dayRecs].sort((a, b) => +a.dateTime - +b.dateTime)
+      // Determine effective login/logout minutes for this day (override if exists)
+      const override = dayOverrides[date]
+      let loginMin = defaultLoginMin
+      let logoutMin = defaultLogoutMin
+      if (override) {
+        if (override.login) loginMin = scheduleMinutes(override.login)
+        if (override.logout) logoutMin = scheduleMinutes(override.logout)
+      }
+
+      const sorted = [...dayRecs].sort((a, b) => +a.dateTime - +b.dateTime)
       const firstIn = sorted.find(r => r.status === 'In') ?? null
-      const outs    = sorted.filter(r => r.status === 'Out')
+      const outs = sorted.filter(r => r.status === 'Out')
       const lastOut = outs.length > 0 ? outs[outs.length - 1] : null
 
-      // Use edited times if available, otherwise use raw
-      const inTime  = edit.in  ? new Date(edit.in)  : (firstIn  ? firstIn.dateTime  : null)
-      const outTime = edit.out ? new Date(edit.out)  : (lastOut  ? lastOut.dateTime  : null)
+      const inTime = edit.in ? new Date(edit.in) : (firstIn ? firstIn.dateTime : null)
+      const outTime = edit.out ? new Date(edit.out) : (lastOut ? lastOut.dateTime : null)
 
       let presenceMinutes = 0
       if (inTime && outTime && outTime > inTime)
@@ -82,21 +92,24 @@ export function calculateStats(records, schedules, source, sourceLabel, holidays
         isWeekend, isHoliday,
         presenceMinutes, lateMinutes, overtimeMinutes,
         manualOut: !!edit.out,
-        manualIn:  !!edit.in,
+        manualIn: !!edit.in,
+        shiftOverride: !!override,
+        effectiveLogin: override?.login || schedule?.scheduledLoginTime,
+        effectiveLogout: override?.logout || schedule?.scheduledLogoutTime,
       })
 
       totalPresence += presenceMinutes
-      totalLate     += lateMinutes
+      totalLate += lateMinutes
       totalOvertime += overtimeMinutes
     }
 
     employees.push({
       userId,
-      name:                 sample.name,
-      department:           sample.department,
-      shift:                schedule?.shift ?? null,
+      name: sample.name,
+      department: sample.department,
+      shift: schedule?.shift ?? null,
       totalPresenceMinutes: totalPresence,
-      totalLateMinutes:     totalLate,
+      totalLateMinutes: totalLate,
       totalOvertimeMinutes: totalOvertime,
       lateDays, overtimeDays,
       workingDays: days.filter(d => d.inTime && !d.isWeekend && !d.isHoliday).length,
@@ -109,7 +122,7 @@ export function calculateStats(records, schedules, source, sourceLabel, holidays
     processedAt: new Date().toISOString(),
     dateRange: {
       from: globalMin.toISOString().slice(0, 10),
-      to:   globalMax.toISOString().slice(0, 10),
+      to: globalMax.toISOString().slice(0, 10),
     },
     source, sourceLabel,
   }
@@ -128,5 +141,3 @@ export function fmt12h(date) {
     hour: 'numeric', minute: '2-digit', hour12: true,
   })
 }
-
-export function fmtTime(date) { return fmt12h(date) }
