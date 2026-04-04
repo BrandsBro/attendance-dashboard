@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as XLSX from 'xlsx'
 import { fmtMinutes, fmt12h } from '@/lib/calculateStats'
 
 export default function EmployeeDetail({ employee: emp, schedules, onUpdateSchedule, onClose }) {
@@ -12,6 +13,34 @@ export default function EmployeeDetail({ employee: emp, schedules, onUpdateSched
   const [batchLogin, setBatchLogin] = useState('09:00')
   const [batchLogout, setBatchLogout] = useState('18:00')
   const [graceValue, setGraceValue] = useState(currentGrace)
+
+  // Download employee detail as Excel
+  function handleDownloadEmployeeDetail() {
+    const rows = emp.days.map(d => {
+      const isOff = d.isWeekend || d.isHoliday
+      let notes = []
+      if (d.isHoliday) notes.push('Holiday')
+      if (d.isWeekend) notes.push('Weekend')
+      if (dayOverrides[d.date]) notes.push('Shift Override')
+      if (d.manualIn || d.manualOut) notes.push('Time Edited')
+      return {
+        'Date': d.date,
+        'Shift In': getEffectiveLogin(d.date),
+        'Shift Out': getEffectiveLogout(d.date),
+        'Actual In': fmt12h(d.inTime),
+        'Actual Out': fmt12h(d.outTime),
+        'Presence (min)': d.presenceMinutes,
+        'Late (min)': isOff ? 0 : d.lateMinutes,
+        'Overtime (min)': isOff ? 0 : d.overtimeMinutes,
+        'Notes': notes.join(', ') || '—',
+      }
+    })
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, `${emp.name}_daily`)
+    XLSX.writeFile(wb, `${emp.name}_attendance_${new Date().toISOString().slice(0, 10)}.xlsx`)
+  }
 
   function toggleDate(date) {
     setSelectedDates(prev => {
@@ -88,32 +117,24 @@ export default function EmployeeDetail({ employee: emp, schedules, onUpdateSched
               )}
             </p>
           </div>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-primary" onClick={handleDownloadEmployeeDetail} style={{ fontSize: 13, padding: '6px 12px' }}>
+              📥 Download Detail
+            </button>
+            <button className="btn-icon" onClick={onClose}>✕</button>
+          </div>
         </div>
 
+        {/* Summary pills */}
         <div className="detail-stats" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <div className="detail-pill">
-            <div className="pill-value">{emp.workingDays}</div>
-            <div className="pill-label">Days present</div>
-          </div>
-          <div className="detail-pill">
-            <div className="pill-value">{fmtMinutes(emp.totalPresenceMinutes)}</div>
-            <div className="pill-label">Total presence</div>
-          </div>
-          <div className="detail-pill detail-pill-amber">
-            <div className="pill-value">{emp.lateDays ?? 0} days</div>
-            <div className="pill-label">Late days</div>
-          </div>
-          <div className="detail-pill detail-pill-amber">
-            <div className="pill-value">{fmtMinutes(emp.totalLateMinutes)}</div>
-            <div className="pill-label">Total late</div>
-          </div>
-          <div className="detail-pill detail-pill-blue">
-            <div className="pill-value">{fmtMinutes(emp.totalOvertimeMinutes)}</div>
-            <div className="pill-label">Total overtime</div>
-          </div>
+          <div className="detail-pill"><div className="pill-value">{emp.workingDays}</div><div className="pill-label">Days present</div></div>
+          <div className="detail-pill"><div className="pill-value">{fmtMinutes(emp.totalPresenceMinutes)}</div><div className="pill-label">Total presence</div></div>
+          <div className="detail-pill detail-pill-amber"><div className="pill-value">{emp.lateDays ?? 0} days</div><div className="pill-label">Late days</div></div>
+          <div className="detail-pill detail-pill-amber"><div className="pill-value">{fmtMinutes(emp.totalLateMinutes)}</div><div className="pill-label">Total late</div></div>
+          <div className="detail-pill detail-pill-blue"><div className="pill-value">{fmtMinutes(emp.totalOvertimeMinutes)}</div><div className="pill-label">Total overtime</div></div>
         </div>
 
+        {/* Grace period selector */}
         <div className="bulk-row" style={{ marginBottom: 16, justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <span className="bulk-label">Grace period for this employee:</span>
@@ -131,6 +152,7 @@ export default function EmployeeDetail({ employee: emp, schedules, onUpdateSched
           </div>
         </div>
 
+        {/* Batch shift override */}
         <div className="bulk-row" style={{ marginBottom: 16, justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <span className="bulk-label">Set shift for selected days:</span>
@@ -179,9 +201,7 @@ export default function EmployeeDetail({ employee: emp, schedules, onUpdateSched
                       {getEffectiveLogin(d.date)}
                       {hasOverride && <button className="btn-link" style={{ marginLeft: 6 }} onClick={() => clearOverrideForDate(d.date)}>✕</button>}
                     </td>
-                    <td className={hasOverride ? 'day-edited' : ''} style={{ whiteSpace: 'nowrap' }}>
-                      {getEffectiveLogout(d.date)}
-                    </td>
+                    <td className={hasOverride ? 'day-edited' : ''} style={{ whiteSpace: 'nowrap' }}>{getEffectiveLogout(d.date)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmt12h(d.inTime)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmt12h(d.outTime)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmtMinutes(d.presenceMinutes)}</td>
