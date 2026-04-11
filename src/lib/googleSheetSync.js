@@ -59,3 +59,15 @@ export function buildPayrollSummaryRows(employees, getSettingsFn, recordsByUserI
     }
   })
 }
+
+// ─────────────────────────────────────────────────────────────
+//  Pull all data FROM Google Sheets
+// ─────────────────────────────────────────────────────────────
+export async function fetchAllFromSheets() {
+  const url = getSheetsUrl()
+  if (!url) throw new Error('URL not set')
+  const res  = await fetch(`/api/sheets?url=${encodeURIComponent(url)}&action=readAll`)
+  const json = await res.json()
+  if (json.error) throw new Error(json.error)
+  return json
+}

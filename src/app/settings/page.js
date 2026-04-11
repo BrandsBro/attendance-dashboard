@@ -9,10 +9,12 @@ import { useShiftOverrides }   from '@/hooks/useShiftOverrides'
 import { loadRawRecords }      from '@/lib/storage'
 import { calcPayroll }         from '@/lib/payroll'
 import Sidebar                 from '@/components/Sidebar'
+
 import {
   getSheetsUrl, setSheetsUrl,
   pingSheets, syncAll,
 } from '@/lib/googleSheetSync'
+import { useSheetsImport } from '@/hooks/useSheetsImport'
 
 // ── Status badge ──────────────────────────────────────────────
 function StatusDot({ status }) {
@@ -55,6 +57,7 @@ export default function SettingsPage() {
   const { records: leaveRecords }                     = useLeaveRecords()
   const { settings: payrollSettings, getSettings }    = usePayrollSettings()
   const { overrides }                                 = useShiftOverrides()
+  const { importFromSheets, status: importStatus, message: importMessage } = useSheetsImport()
 
   const [url,        setUrl]        = useState('')
   const [urlSaved,   setUrlSaved]   = useState(false)
@@ -314,7 +317,36 @@ export default function SettingsPage() {
           </div>
 
         </div>
+
+        <div className="card" style={{ marginTop: 20 }}>
+          <div className="card-header">
+            <span className="card-title">⬇ Import from Google Sheets</span>
+          </div>
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
+              Pull all data from Google Sheets into the app. This replaces local data with whatever is in your Sheet.
+            </p>
+            <button
+              className="btn btn-secondary"
+              style={{ alignSelf: 'flex-start', padding: '10px 24px', fontSize: 14 }}
+              onClick={importFromSheets}
+              disabled={!url || importStatus === 'loading'}
+            >
+              {importStatus === 'loading' ? '⏳ Importing…' : '⬇ Import from Sheets'}
+            </button>
+            {importMessage && (
+              <div style={{
+                fontSize: 13, padding: '10px 14px', borderRadius: 8,
+                background: importStatus === 'ok' ? '#d1fae5' : importStatus === 'error' ? '#fee2e2' : '#f0f9ff',
+                color: importStatus === 'ok' ? '#065f46' : importStatus === 'error' ? '#991b1b' : '#0369a1',
+              }}>
+                {importMessage}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+      
     </div>
   )
 }
