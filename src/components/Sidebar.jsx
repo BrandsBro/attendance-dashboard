@@ -11,6 +11,7 @@ const NAV = [
   { id: 'payroll',       href: '/payroll',       icon: '◎', label: 'Payroll'       },
   { id: 'holidays',      href: '/holidays',      icon: '◻', label: 'Holidays'      },
   { id: 'upload',        href: '/upload',        icon: '⊕', label: 'Upload Data'   },
+  { id: 'settings', href: '/settings', icon: '⚙', label: 'Settings & Sync' },
 ]
 
 export default function Sidebar({ active, summary }) {
