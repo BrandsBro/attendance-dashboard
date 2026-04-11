@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { parseFile, parseCsv }              from '@/lib/parseAttendance'
 import { calculateStats }                   from '@/lib/calculateStats'
 import { fetchSheetCsv, isValidSheetsUrl }  from '@/lib/googleSheets'
+import { syncSchedules, syncHolidays, syncAttendanceSummary } from '@/lib/googleSheetSync'
 import { loadCache, saveCache, clearCache, saveRawRecords, loadRawRecords } from '@/lib/storage'
 import { DEFAULT_LOGIN_TIME, DEFAULT_LOGOUT_TIME, DEFAULT_GRACE_MINUTES }   from '@/lib/constants'
 
@@ -99,6 +100,7 @@ export function useAttendanceData() {
         const s = calculateStats(records, next, summary?.source ?? 'upload', summary?.sourceLabel ?? '', holidays, timeEdits)
         setSummary(s)
         persist(s, next, holidays, timeEdits, null)
+        syncSchedules(next).catch(() => {})
       }
       return next
     })
@@ -134,6 +136,7 @@ export function useAttendanceData() {
       const s = calculateStats(records, schedules, summary?.source ?? 'upload', summary?.sourceLabel ?? '', newHolidays, timeEdits)
       setSummary(s)
       persist(s, schedules, newHolidays, timeEdits, null)
+      syncHolidays(newHolidays).catch(() => {})
     }
   }, [rawRecords, schedules, summary, timeEdits])
 

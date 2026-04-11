@@ -2,18 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { loadProfiles, saveProfiles, loadPhotos, savePhoto, removePhoto } from '@/lib/employeeProfiles'
+import { syncEmployees } from '@/lib/googleSheetSync'
 
 export const DESIGNATIONS = [
   'Manager','Senior Manager','Senior Executive','Executive',
   'Assistant','Team Lead','Developer','Designer',
   'Accountant','HR Executive','Operations','Intern',
 ]
-
 export const DEPARTMENTS = [
   'Management','Operations','Finance','HR',
   'Technology','Design','Marketing','Sales','Support',
 ]
-
 export const EMPLOYMENT_TYPES = ['Full Time','Part Time','Contract','Intern']
 export const GENDERS           = ['Male','Female','Other','Prefer not to say']
 export const BLOOD_GROUPS      = ['A+','A-','B+','B-','AB+','AB-','O+','O-']
@@ -27,9 +26,7 @@ export function useEmployeeProfiles(summaryEmployees = []) {
     const pics   = loadPhotos()
     const merged = { ...saved }
     for (const emp of summaryEmployees) {
-      if (!merged[emp.userId]) {
-        merged[emp.userId] = createDefault(emp)
-      }
+      if (!merged[emp.userId]) merged[emp.userId] = createDefault(emp)
     }
     setProfiles(merged)
     setPhotos(pics)
@@ -38,23 +35,11 @@ export function useEmployeeProfiles(summaryEmployees = []) {
 
   function createDefault(emp) {
     return {
-      userId:         emp.userId,
-      name:           emp.name,
-      department:     emp.department ?? '',
-      designation:    '',
-      employmentType: 'Full Time',
-      joinDate:       '',
-      gender:         '',
-      bloodGroup:     '',
-      phone:          '',
-      email:          '',
-      address:        '',
-      emergencyName:  '',
-      emergencyPhone: '',
-      shift:          emp.shift ?? '',
-      casualUsed:     0,
-      sickUsed:       0,
-      notes:          '',
+      userId: emp.userId, name: emp.name, department: emp.department ?? '',
+      designation: '', employmentType: 'Full Time', joinDate: '',
+      gender: '', bloodGroup: '', phone: '', email: '', address: '',
+      emergencyName: '', emergencyPhone: '', shift: emp.shift ?? '',
+      casualUsed: 0, sickUsed: 0, notes: '',
     }
   }
 
@@ -62,6 +47,7 @@ export function useEmployeeProfiles(summaryEmployees = []) {
     setProfiles(prev => {
       const next = { ...prev, [userId]: { ...prev[userId], ...data } }
       saveProfiles(next)
+      syncEmployees(next).catch(() => {})
       return next
     })
   }, [])
@@ -86,6 +72,7 @@ export function useEmployeeProfiles(summaryEmployees = []) {
       const key  = type === 'casual' ? 'casualUsed' : 'sickUsed'
       const next = { ...prev, [userId]: { ...prev[userId], [key]: ((prev[userId]?.[key]) ?? 0) + days } }
       saveProfiles(next)
+      syncEmployees(next).catch(() => {})
       return next
     })
   }, [])
@@ -96,13 +83,10 @@ export function useEmployeeProfiles(summaryEmployees = []) {
       const cur  = prev[userId]?.[key] ?? 0
       const next = { ...prev, [userId]: { ...prev[userId], [key]: Math.max(0, cur - days) } }
       saveProfiles(next)
+      syncEmployees(next).catch(() => {})
       return next
     })
   }, [])
 
-  return {
-    profiles, photos,
-    updateProfile, uploadPhoto, deletePhoto,
-    addLeave, removeLeave,
-  }
+  return { profiles, photos, updateProfile, uploadPhoto, deletePhoto, addLeave, removeLeave }
 }
