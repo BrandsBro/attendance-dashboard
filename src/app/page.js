@@ -6,6 +6,7 @@ import Sidebar               from '@/components/Sidebar'
 import MetricsBar            from '@/components/MetricsBar'
 import SummaryTable          from '@/components/SummaryTable'
 import EmployeeDetail        from '@/components/EmployeeDetail'
+import SyncButton            from '@/components/SyncButton'
 
 export default function Dashboard() {
   const { summary, schedules, updateSchedule, updateLogoutOverride } = useAttendanceData()
@@ -32,6 +33,11 @@ export default function Dashboard() {
           <div className="topbar-left">
             <div className="topbar-title">Dashboard</div>
             {summary && <div className="topbar-sub">{summary.dateRange.from} → {summary.dateRange.to} · {summary.employees.length} employees</div>}
+          </div>
+          <div className="topbar-right">
+            <SyncButton />
+            {!summary && <a href="/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>Upload Data</a>}
+            {summary && <a href="/upload" className="btn btn-secondary" style={{ textDecoration: 'none' }}>↑ New Upload</a>}
           </div>
         </div>
         <div className="page-body">
