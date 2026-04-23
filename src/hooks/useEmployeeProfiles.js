@@ -16,9 +16,12 @@ export const DEFAULT_DEPARTMENTS = [
   'Management','Operations','Finance','HR',
   'Technology','Design','Marketing','Sales','Support',
 ]
-export const EMPLOYMENT_TYPES = ['Full Time','Part Time','Contract','Intern']
-export const GENDERS           = ['Male','Female','Other','Prefer not to say']
-export const BLOOD_GROUPS      = ['A+','A-','B+','B-','AB+','AB-','O+','O-']
+export const DEFAULT_SHIFTS = [
+  '9 AM – 6 PM','10 AM – 7 PM','12 PM – 8 PM','2 PM – 10 PM','5 PM – 10 PM',
+]
+export const EMPLOYMENT_STATUSES = ['Permanent','Probation']
+export const GENDERS              = ['Male','Female','Other','Prefer not to say']
+export const BLOOD_GROUPS         = ['A+','A-','B+','B-','AB+','AB-','O+','O-']
 
 export function useEmployeeProfiles(summaryEmployees = []) {
   const [profiles, setProfiles] = useState({})
@@ -26,12 +29,13 @@ export function useEmployeeProfiles(summaryEmployees = []) {
   const [options,  setOptions]  = useState({
     designations: DEFAULT_DESIGNATIONS,
     departments:  DEFAULT_DEPARTMENTS,
+    shifts:       DEFAULT_SHIFTS,
   })
 
   useEffect(() => {
-    const saved = loadProfiles()
-    const pics  = loadPhotos()
-    const opts  = loadDropdownOptions()
+    const saved  = loadProfiles()
+    const pics   = loadPhotos()
+    const opts   = loadDropdownOptions()
     const merged = { ...saved }
     for (const emp of summaryEmployees) {
       if (!merged[emp.userId]) merged[emp.userId] = makeDefault(emp)
@@ -41,6 +45,7 @@ export function useEmployeeProfiles(summaryEmployees = []) {
     setOptions({
       designations: opts.designations ?? DEFAULT_DESIGNATIONS,
       departments:  opts.departments  ?? DEFAULT_DEPARTMENTS,
+      shifts:       opts.shifts       ?? DEFAULT_SHIFTS,
     })
     saveProfiles(merged)
   }, [summaryEmployees.length])
@@ -49,7 +54,7 @@ export function useEmployeeProfiles(summaryEmployees = []) {
     return {
       userId: emp.userId, name: emp.name,
       department: emp.department ?? '', designation: '',
-      employmentType: 'Full Time', joinDate: '',
+      employmentStatus: 'Permanent', joinDate: '',
       gender: '', bloodGroup: '', phone: '', email: '',
       address: '', emergencyName: '', emergencyPhone: '',
       shift: emp.shift ?? '', casualUsed: 0, sickUsed: 0, notes: '',

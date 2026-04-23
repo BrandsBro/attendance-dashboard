@@ -77,3 +77,14 @@ export function deleteProfile(userId) {
   delete p[userId]
   saveProfiles(p)
 }
+
+export function loadDropdownOptions() {
+  if (!isBrowser()) return {}
+  try { return JSON.parse(localStorage.getItem(OPTIONS_KEY) ?? '{}') }
+  catch { return {} }
+}
+
+export function saveDropdownOptions(opts) {
+  if (!isBrowser()) return
+  localStorage.setItem(OPTIONS_KEY, JSON.stringify(opts))
+}

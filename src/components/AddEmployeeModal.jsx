@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { EMPLOYMENT_STATUSES, GENDERS } from '@/hooks/useEmployeeProfiles'
 
 export default function AddEmployeeModal({ options, onAdd, onClose }) {
   const [form, setForm] = useState({
     userId: '', name: '', designation: '',
-    department: '', employmentType: 'Full Time',
-    joinDate: '', phone: '', email: '',
+    department: '', employmentStatus: 'Permanent',
+    shift: '', joinDate: '', phone: '', email: '',
   })
   const [error, setError] = useState('')
 
@@ -53,9 +54,16 @@ export default function AddEmployeeModal({ options, onAdd, onClose }) {
             </select>
           </label>
           <label className="form-label">
-            Employment Type
-            <select className="input" value={form.employmentType} onChange={e => set('employmentType', e.target.value)}>
-              {['Full Time','Part Time','Contract','Intern'].map(t => <option key={t}>{t}</option>)}
+            Employment Status
+            <select className="input" value={form.employmentStatus} onChange={e => set('employmentStatus', e.target.value)}>
+              {EMPLOYMENT_STATUSES.map(s => <option key={s}>{s}</option>)}
+            </select>
+          </label>
+          <label className="form-label">
+            Shift
+            <select className="input" value={form.shift} onChange={e => set('shift', e.target.value)}>
+              <option value="">Select…</option>
+              {(options.shifts ?? []).map(s => <option key={s}>{s}</option>)}
             </select>
           </label>
           <label className="form-label">
@@ -65,10 +73,6 @@ export default function AddEmployeeModal({ options, onAdd, onClose }) {
           <label className="form-label">
             Phone
             <input className="input" type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} />
-          </label>
-          <label className="form-label">
-            Email
-            <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
           </label>
         </div>
 
