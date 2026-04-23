@@ -34,7 +34,8 @@ export function useEmployeeProfiles() {
     departments:  DEFAULT_DEPARTMENTS,
     shifts:       DEFAULT_SHIFTS,
   })
-  const [syncing, setSyncing] = useState(false)
+  const [syncing,  setSyncing]  = useState(false)
+  const [loading,  setLoading]  = useState(true)
 
   useEffect(() => {
     setPhotos(loadPhotos())
@@ -49,10 +50,8 @@ export function useEmployeeProfiles() {
     fetchAllFromSheets()
       .then(sheetsData => {
         const fromSheets = parseEmployeesFromSheets(sheetsData)
-        // Replace localStorage with Sheets data
         saveProfiles(fromSheets)
         setProfiles(fromSheets)
-        console.log('Loaded', Object.keys(fromSheets).length, 'employees from Sheets')
       })
       .catch(e => {
         console.warn('Could not fetch from Sheets — falling back to localStorage:', e.message)
@@ -64,6 +63,7 @@ export function useEmployeeProfiles() {
         }
         setProfiles(normalised)
       })
+      .finally(() => setLoading(false))
   }, [])
 
   // Push to Sheets immediately on every change
@@ -183,7 +183,7 @@ export function useEmployeeProfiles() {
   }, [])
 
   return {
-    profiles, photos, options, syncing,
+    profiles, photos, options, syncing, loading,
     addEmployee, updateProfile, removeEmployee,
     uploadPhoto, deletePhoto,
     addLeave, removeLeave,

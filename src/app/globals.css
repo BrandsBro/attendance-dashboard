@@ -1657,3 +1657,8 @@ button.sidebar-shift-toggle:hover {
 
 .filter-results strong { color: var(--text); }
 .filter-results-hint  { color: var(--accent); }
+
+/* ── Loading screen ──────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -9,6 +9,7 @@ import EmployeeProfilePanel    from '@/components/EmployeeProfilePanel'
 import AddEmployeeModal        from '@/components/AddEmployeeModal'
 import ManageOptionsModal      from '@/components/ManageOptionsModal'
 import EmployeeFilterBar       from '@/components/EmployeeFilterBar'
+import LoadingScreen            from '@/components/LoadingScreen'
 
 export default function EmployeesPage() {
   const { summary, schedules, updateSchedule } = useAttendanceData()
@@ -19,6 +20,8 @@ export default function EmployeesPage() {
     addLeave, removeLeave,
     addOption, removeOption,
   } = useEmployeeProfiles()
+  
+  if (loading) return <LoadingScreen message="Loading employees from Google Sheets…" />
 
   const [selected,      setSelected]      = useState(null)
   const [showAdd,       setShowAdd]       = useState(false)
