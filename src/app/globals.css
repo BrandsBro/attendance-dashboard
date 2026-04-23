@@ -1448,3 +1448,76 @@ button.sidebar-shift-toggle:hover {
 
 .emp-card-action-btn:hover { background: var(--bg); color: var(--text); }
 .emp-card-action-btn.danger:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
+
+/* ── Employee filter bar ─────────────────────────────────── */
+.emp-filter-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emp-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.emp-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.emp-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.emp-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.emp-filter-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.emp-filter-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.emp-filter-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(0,0,0,.1);
+  border-radius: 100px;
+  padding: 1px 5px;
+  font-family: 'DM Mono', monospace;
+}
+
+.emp-filter-pill.active .emp-filter-count {
+  background: rgba(255,255,255,.25);
+}
