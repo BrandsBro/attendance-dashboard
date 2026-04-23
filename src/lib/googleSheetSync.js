@@ -221,7 +221,30 @@ export function buildPayrollSummaryRows(employees, getSettingsFn, recordsByUserI
   })
 }
 
-export async function syncEmployees(profiles)        { return syncAll({ employees: profiles }) }
+export async function syncEmployees(profiles) {
+  const rows = Object.values(profiles).map(p => ({
+    'User ID':            String(p.userId            || ''),
+    'Name':               String(p.name              || ''),
+    'Designation':        String(p.designation       || ''),
+    'Department':         String(p.department        || ''),
+    'Employment Status':  String(p.employmentStatus  || ''),
+    'Join Date':          String(p.joinDate          || ''),
+    'Gender':             String(p.gender            || ''),
+    'Blood Group':        String(p.bloodGroup        || ''),
+    'Phone':              String(p.phone             || ''),
+    'Email':              String(p.email             || ''),
+    'Address':            String(p.address           || ''),
+    'Emergency Name':     String(p.emergencyName     || ''),
+    'Emergency Phone':    String(p.emergencyPhone    || ''),
+    'Shift':              String(p.shift             || ''),
+    'Casual Used':        Number(p.casualUsed        ?? 0),
+    'Sick Used':          Number(p.sickUsed          ?? 0),
+    'Notes':              String(p.notes             || ''),
+    'Last Updated':       new Date().toISOString(),
+  }))
+  if (rows.length === 0) return { ok: false, error: 'No employees' }
+  return post('syncAll', { Employees: { headers: Object.keys(rows[0]), rows } })
+}
 export async function syncAttendanceRecords(records) { return syncAll({ attendanceRecords: records }) }
 export async function syncAttendanceSummary(summary) { return syncAll({ attendanceSummary: summary }) }
 export async function syncLeaveRecords(records)      { return syncAll({ leaveRecords: records }) }

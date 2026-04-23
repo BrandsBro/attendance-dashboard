@@ -4,17 +4,13 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430m
 
 export async function POST(req) {
   try {
-    const body = await req.json()
-    const { action, data } = body
+    const { action, data } = await req.json()
 
-    // Split into chunks to avoid URL length limit
     if (action === 'syncAll' && data) {
       const results = {}
       for (const [sheetName, payload] of Object.entries(data)) {
-        // Send each sheet separately via GET
-        const chunkData = JSON.stringify({ [sheetName]: payload })
-        const url = `${SCRIPT_URL}?action=syncAll&data=${encodeURIComponent(chunkData)}`
-        
+        const chunkPayload = { [sheetName]: payload }
+        const url = `${SCRIPT_URL}?action=syncAll&data=${encodeURIComponent(JSON.stringify(chunkPayload))}`
         try {
           const res  = await fetch(url, { redirect: 'follow' })
           const text = await res.text()
@@ -27,7 +23,6 @@ export async function POST(req) {
       return NextResponse.json({ ok: true, results })
     }
 
-    // Single sheet sync
     const url = `${SCRIPT_URL}?action=${action}&data=${encodeURIComponent(JSON.stringify(data))}`
     const res  = await fetch(url, { redirect: 'follow' })
     const text = await res.text()
