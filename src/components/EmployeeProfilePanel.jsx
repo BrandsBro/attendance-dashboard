@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { calcAccruedLeave, calcRemainingCasual } from '@/lib/employeeProfiles'
 import { fmtMinutes } from '@/lib/calculateStats'
-import { EMPLOYMENT_TYPES, GENDERS, BLOOD_GROUPS } from '@/hooks/useEmployeeProfiles'
+import { EMPLOYMENT_STATUSES, GENDERS, BLOOD_GROUPS } from '@/hooks/useEmployeeProfiles'
 
 const COLORS = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#0284c7']
 function getColor(id)   { return COLORS[id.charCodeAt(id.length-1) % COLORS.length] }
@@ -125,7 +125,7 @@ export default function EmployeeProfilePanel({
                   <label className="form-label">
                     Employment Type
                     <select className="input" value={form.employmentType} onChange={e => set('employmentType', e.target.value)}>
-                      {EMPLOYMENT_TYPES.map(t => <option key={t}>{t}</option>)}
+                      {EMPLOYMENT_STATUSES.map(t => <option key={t}>{t}</option>)}
                     </select>
                   </label>
                   <label className="form-label">
