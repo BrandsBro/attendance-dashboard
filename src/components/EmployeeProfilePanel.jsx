@@ -146,6 +146,13 @@ export default function EmployeeProfilePanel({
                       {BLOOD_GROUPS.map(b => <option key={b}>{b}</option>)}
                     </select>
                   </label>
+                  <label className="form-label">
+                    Shift
+                    <select className="input" value={form.shift ?? ''} onChange={e => set('shift', e.target.value)}>
+                      <option value="">Selectxe2x80xa6</option>
+                      {(options?.shifts ?? []).map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </label>
                 </div>
               </section>
 
