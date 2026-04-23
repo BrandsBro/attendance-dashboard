@@ -4,33 +4,33 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430m
 
 export async function POST(req) {
   try {
-    const { action, data } = await req.json()
+    const body = await req.json()
+    const { action, data } = body
 
-    // Step 1 - get the redirect URL without sending body
-    const res1 = await fetch(SCRIPT_URL, {
-      method:  'POST',
-      redirect: 'manual',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action, data }),
-    })
-
-    let finalUrl = SCRIPT_URL
-
-    // Step 2 - if redirected, use the redirect URL
-    if ([301,302,303,307,308].includes(res1.status)) {
-      const location = res1.headers.get('location')
-      if (location) finalUrl = location
+    // Split into chunks to avoid URL length limit
+    if (action === 'syncAll' && data) {
+      const results = {}
+      for (const [sheetName, payload] of Object.entries(data)) {
+        // Send each sheet separately via GET
+        const chunkData = JSON.stringify({ [sheetName]: payload })
+        const url = `${SCRIPT_URL}?action=syncAll&data=${encodeURIComponent(chunkData)}`
+        
+        try {
+          const res  = await fetch(url, { redirect: 'follow' })
+          const text = await res.text()
+          const json = JSON.parse(text)
+          results[sheetName] = json.results?.[sheetName] ?? json
+        } catch(e) {
+          results[sheetName] = { ok: false, error: e.message }
+        }
+      }
+      return NextResponse.json({ ok: true, results })
     }
 
-    // Step 3 - POST with body to final URL
-    const res2 = await fetch(finalUrl, {
-      method:  'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action, data }),
-    })
-
-    const text = await res2.text()
+    // Single sheet sync
+    const url = `${SCRIPT_URL}?action=${action}&data=${encodeURIComponent(JSON.stringify(data))}`
+    const res  = await fetch(url, { redirect: 'follow' })
+    const text = await res.text()
     try { return NextResponse.json(JSON.parse(text)) }
     catch { return NextResponse.json({ error: text }) }
 
