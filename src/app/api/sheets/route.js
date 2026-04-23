@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req) {
   const { url, action, data } = await req.json()
-  const res  = await fetch(url, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ action, data }),
+  const res = await fetch(url, {
+    method:   'POST',
+    redirect: 'follow',
+    headers:  { 'Content-Type': 'application/json' },
+    body:     JSON.stringify({ action, data }),
   })
   const text = await res.text()
   let json
@@ -23,7 +24,7 @@ export async function GET(req) {
     ? `${url}?action=${action}&sheet=${encodeURIComponent(sheet)}`
     : `${url}?action=${action}`
 
-  const res  = await fetch(scriptUrl)
+  const res  = await fetch(scriptUrl, { redirect: 'follow' })
   const text = await res.text()
   let json
   try { json = JSON.parse(text) } catch { json = { error: text } }
