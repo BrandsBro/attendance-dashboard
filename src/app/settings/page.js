@@ -15,6 +15,7 @@ import {
   pingSheets, syncAll,
 } from '@/lib/googleSheetSync'
 import { useSheetsImport } from '@/hooks/useSheetsImport'
+import { useAutoSync } from '@/hooks/useAutoSync'
 
 // ── Status badge ──────────────────────────────────────────────
 function StatusDot({ status }) {
@@ -58,6 +59,14 @@ export default function SettingsPage() {
   const { settings: payrollSettings, getSettings }    = usePayrollSettings()
   const { overrides }                                 = useShiftOverrides()
   const { importFromSheets, status: importStatus, message: importMessage } = useSheetsImport()
+
+  // Auto-sync on any data change
+  useAutoSync({
+    summary, schedules, holidays,
+    profiles, leaveRecords,
+    payrollSettings, shiftOverrides: overrides,
+    getSettings,
+  })
 
   const [pingStatus, setPingStatus] = useState('idle')
   const [syncStatus, setSyncStatus] = useState('idle')
