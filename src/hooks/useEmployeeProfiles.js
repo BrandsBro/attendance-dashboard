@@ -67,10 +67,14 @@ export function useEmployeeProfiles() {
   }, [])
 
   // Push to Sheets immediately on every change
-  async function pushToSheets(updatedProfiles) {
+  async function pushToSheets(updatedProfiles, changedId) {
     try {
-      console.log('🔄 Pushing to Sheets:', Object.keys(updatedProfiles).length, 'employees')
-      const result = await syncEmployees(updatedProfiles)
+      // Only send the single changed employee to avoid URL length limit
+      const toSync = changedId && updatedProfiles[changedId]
+        ? { [changedId]: updatedProfiles[changedId] }
+        : updatedProfiles
+      console.log('🔄 Pushing to Sheets:', Object.keys(toSync).length, 'employees')
+      const result = await syncEmployees(toSync)
       console.log('✅ Push result:', result)
     } catch(e) {
       console.error('❌ Sheets push failed:', e.message)
@@ -101,7 +105,7 @@ export function useEmployeeProfiles() {
       }
       const next = { ...prev, [id]: profile }
       saveProfiles(next)
-      pushToSheets(next)
+      pushToSheets(next, id)
       return next
     })
   }, [])
@@ -111,7 +115,7 @@ export function useEmployeeProfiles() {
     setProfiles(prev => {
       const next = { ...prev, [id]: { ...prev[id], ...data, userId: id } }
       saveProfiles(next)
-      pushToSheets(next)
+      pushToSheets(next, id)
       return next
     })
   }, [])
