@@ -53,7 +53,7 @@ function ResultRow({ label, result }) {
 
 export default function SettingsPage() {
   const { summary, schedules, holidays }             = useAttendanceData()
-  const { profiles }                                  = useEmployeeProfiles(summary?.employees ?? [])
+  const { profiles }                                  = useEmployeeProfiles()
   const { records: leaveRecords }                     = useLeaveRecords()
   const { settings: payrollSettings, getSettings }    = usePayrollSettings()
   const { overrides }                                 = useShiftOverrides()

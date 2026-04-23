@@ -31,7 +31,7 @@ function fmt(date) {
 export default function LeavePage() {
   const { summary } = useAttendanceData()
   const { records, addRecord, removeRecord, updateRecord } = useLeaveRecords()
-  const { profiles } = useEmployeeProfiles(summary?.employees ?? [])
+  const { profiles } = useEmployeeProfiles()
 
   const employees = summary?.employees ?? []
 

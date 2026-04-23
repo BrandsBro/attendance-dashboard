@@ -33,16 +33,11 @@ export default function EmployeesPage() {
 
   const summaryEmployees = summary?.employees ?? []
 
-  const allIds = [...new Set([
-    ...summaryEmployees.map(e => String(e.userId)),
-    ...Object.keys(profiles).map(String),
-  ])]
-
-  const allEmployees = allIds.map(id => ({
-    userId:  id,
-    name:    profiles[id]?.name ?? summaryEmployees.find(e => e.userId === id)?.name ?? id,
-    stats:   summaryEmployees.find(e => e.userId === id) ?? null,
-    profile: profiles[id] ?? null,
+  const allEmployees = Object.values(profiles).map(p => ({
+    userId:  p.userId,
+    name:    p.name,
+    stats:   summaryEmployees.find(e => String(e.userId) === p.userId) ?? null,
+    profile: p,
   }))
 
   const filtered = allEmployees.filter(e => {
