@@ -17,13 +17,13 @@ export const DEFAULT_DEPARTMENTS = [
   'Technology','Design','Marketing','Sales','Support',
 ]
 export const DEFAULT_SHIFTS = [
-  '9 AM – 6 PM','10 AM – 7 PM','12 PM – 8 PM','2 PM – 10 PM','5 PM – 10 PM',
+  '9 AM - 6 PM','10 AM - 7 PM','12 PM - 8 PM','2 PM - 10 PM','5 PM - 10 PM',
 ]
 export const EMPLOYMENT_STATUSES = ['Permanent','Probation']
 export const GENDERS              = ['Male','Female','Other','Prefer not to say']
 export const BLOOD_GROUPS         = ['A+','A-','B+','B-','AB+','AB-','O+','O-']
 
-export function useEmployeeProfiles(summaryEmployees = []) {
+export function useEmployeeProfiles() {
   const [profiles, setProfiles] = useState({})
   const [photos,   setPhotos]   = useState({})
   const [options,  setOptions]  = useState({
@@ -33,61 +33,47 @@ export function useEmployeeProfiles(summaryEmployees = []) {
   })
 
   useEffect(() => {
-    // Load saved profiles — normalise ALL keys to strings
-    const rawSaved = loadProfiles()
+    const raw  = loadProfiles()
     const saved = {}
-    for (const [k, v] of Object.entries(rawSaved)) {
-      saved[String(k)] = { ...v, userId: String(v.userId ?? k) }
+    for (const [k, v] of Object.entries(raw)) {
+      const id = String(k)
+      saved[id] = { ...v, userId: id }
     }
-
-    const pics  = loadPhotos()
-    const opts  = loadDropdownOptions()
-    const merged = { ...saved }
-
-    for (const emp of summaryEmployees) {
-      const id = String(emp.userId)
-      if (!merged[id]) {
-        merged[id] = makeDefault({ ...emp, userId: id })
-      }
-      // Never overwrite existing saved profile data
-    }
-
-    setProfiles(merged)
-    setPhotos(pics)
+    setProfiles(saved)
+    setPhotos(loadPhotos())
+    const opts = loadDropdownOptions()
     setOptions({
       designations: opts.designations ?? DEFAULT_DESIGNATIONS,
       departments:  opts.departments  ?? DEFAULT_DEPARTMENTS,
       shifts:       opts.shifts       ?? DEFAULT_SHIFTS,
     })
-    saveProfiles(merged)
-  }, [summaryEmployees.length])
-
-  function makeDefault(emp) {
-    return {
-      userId:           String(emp.userId ?? ''),
-      name:             emp.name           || '',
-      department:       emp.department     || '',
-      designation:      '',
-      employmentStatus: 'Permanent',
-      joinDate:         '',
-      gender:           '',
-      bloodGroup:       '',
-      phone:            '',
-      email:            '',
-      address:          '',
-      emergencyName:    '',
-      emergencyPhone:   '',
-      shift:            emp.shift          || '',
-      casualUsed:       0,
-      sickUsed:         0,
-      notes:            '',
-    }
-  }
+  }, [])
 
   const addEmployee = useCallback((data) => {
     setProfiles(prev => {
       const id   = String(data.userId)
-      const next = { ...prev, [id]: { ...makeDefault({ userId: id, name: data.name }), ...data, userId: id } }
+      const next = {
+        ...prev,
+        [id]: {
+          userId:           id,
+          name:             data.name             || '',
+          department:       data.department       || '',
+          designation:      data.designation      || '',
+          employmentStatus: data.employmentStatus || 'Permanent',
+          joinDate:         data.joinDate         || '',
+          gender:           data.gender           || '',
+          bloodGroup:       data.bloodGroup       || '',
+          phone:            data.phone            || '',
+          email:            data.email            || '',
+          address:          data.address          || '',
+          emergencyName:    data.emergencyName    || '',
+          emergencyPhone:   data.emergencyPhone   || '',
+          shift:            data.shift            || '',
+          casualUsed:       0,
+          sickUsed:         0,
+          notes:            data.notes            || '',
+        }
+      }
       saveProfiles(next)
       return next
     })

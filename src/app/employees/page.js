@@ -18,7 +18,7 @@ export default function EmployeesPage() {
     uploadPhoto, deletePhoto,
     addLeave, removeLeave,
     addOption, removeOption,
-  } = useEmployeeProfiles(summary?.employees ?? [])
+  } = useEmployeeProfiles()
 
   const [selected,      setSelected]      = useState(null)
   const [showAdd,       setShowAdd]       = useState(false)
@@ -32,7 +32,6 @@ export default function EmployeesPage() {
   const [filterStatus,  setFilterStatus]  = useState('')
 
   const summaryEmployees = summary?.employees ?? []
-
   const allEmployees = Object.values(profiles).map(p => ({
     userId:  p.userId,
     name:    p.name,

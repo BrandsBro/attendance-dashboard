@@ -10,7 +10,7 @@ import { syncAll }              from '@/lib/sheetsSync'
 
 export default function SyncButton() {
   const { summary, schedules, holidays }       = useAttendanceData()
-  const { profiles, options }                  = useEmployeeProfiles(summary?.employees ?? [])
+  const { profiles, options } = useEmployeeProfiles()
   const { records: leaveRecords }              = useLeaveRecords()
   const { settings: payrollSettings }          = usePayrollSettings()
   const { overrides: shiftOverrides }          = useShiftOverrides()
