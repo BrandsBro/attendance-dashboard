@@ -23,18 +23,25 @@ export default function SyncButton() {
     setSyncing(true)
     setSyncError(null)
 
-    try {
-      // Debug — log exactly what we have
-      console.log('profiles:', Object.keys(profiles).length)
-      console.log('summary employees:', summary?.employees?.length ?? 0)
-      console.log('leaveRecords:', Object.keys(leaveRecords).length)
-      console.log('payrollSettings:', Object.keys(payrollSettings).length)
-      console.log('shiftOverrides:', Object.keys(shiftOverrides).length)
-      console.log('holidays:', holidays?.length ?? 0)
-      console.log('schedules:', Object.keys(schedules ?? {}).length)
-      console.log('options:', Object.keys(options).length)
+    console.group('🔄 SYNC TO GOOGLE SHEETS')
 
-      const result = await syncAll({
+    try {
+      // ── 1. Log raw data ──────────────────────────────────
+      console.group('📦 Raw data check')
+      console.log('profiles type:', typeof profiles, '| keys:', Object.keys(profiles).length)
+      console.log('profiles sample:', Object.values(profiles)[0] ?? 'EMPTY')
+      console.log('summary:', summary ? `✓ ${summary.employees?.length} employees` : '✗ null')
+      console.log('leaveRecords type:', typeof leaveRecords, '| keys:', Object.keys(leaveRecords).length)
+      console.log('payrollSettings type:', typeof payrollSettings, '| keys:', Object.keys(payrollSettings).length)
+      console.log('shiftOverrides type:', typeof shiftOverrides, '| keys:', Object.keys(shiftOverrides).length)
+      console.log('holidays:', Array.isArray(holidays) ? `✓ array [${holidays.length}]` : `✗ ${typeof holidays}`)
+      console.log('schedules type:', typeof schedules, '| keys:', Object.keys(schedules ?? {}).length)
+      console.log('options type:', typeof options, '| keys:', Object.keys(options).length)
+      console.groupEnd()
+
+      // ── 2. Build payload ──────────────────────────────────
+      console.group('🏗️ Building payload')
+      const payload = {
         profiles,
         summary,
         leaveRecords,
@@ -43,20 +50,35 @@ export default function SyncButton() {
         holidays,
         schedules,
         options,
-      })
+      }
+      console.log('Payload keys:', Object.keys(payload))
+      console.groupEnd()
 
-      console.log('Sync result:', result)
+      // ── 3. Call syncAll ───────────────────────────────────
+      console.group('📡 Calling syncAll')
+      console.time('sync duration')
+      const result = await syncAll(payload)
+      console.timeEnd('sync duration')
+      console.log('Result:', result)
+      console.groupEnd()
 
-      if (result.ok) {
+      // ── 4. Handle result ──────────────────────────────────
+      if (result?.ok) {
+        console.log('✅ Sync successful!', result)
         setLastSync(new Date().toISOString())
       } else {
-        setSyncError(result.error || 'Sync failed')
+        const err = result?.error || 'Unknown error'
+        console.error('❌ Sync failed:', err)
+        setSyncError(err)
       }
+
     } catch(e) {
-      console.error('Sync error:', e)
+      console.error('💥 Sync exception:', e)
+      console.error('Stack:', e.stack)
       setSyncError(e.message)
     } finally {
       setSyncing(false)
+      console.groupEnd()
     }
   }
 

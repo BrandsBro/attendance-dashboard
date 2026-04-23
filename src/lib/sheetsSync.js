@@ -207,3 +207,13 @@ export async function syncAll({
     return { ok: false, error: err.message }
   }
 }
+
+// Debug helper — call this from console: window.testSync()
+if (typeof window !== 'undefined') {
+  window.testPing = async () => {
+    console.log('Pinging sheets...')
+    const r = await pingSheets()
+    console.log('Ping result:', r)
+    return r
+  }
+}
