@@ -19,6 +19,7 @@ export default function EmployeesPage() {
     uploadPhoto, deletePhoto,
     addLeave, removeLeave,
     addOption, removeOption,
+  loading,
   } = useEmployeeProfiles()
   
   if (loading) return <LoadingScreen message="Loading employees from Google Sheets…" />
