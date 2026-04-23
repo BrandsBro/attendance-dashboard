@@ -1,6 +1,6 @@
 'use client'
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_m7qzOLcOkDLAcFIHEQd6JAPWLmuunspNtNxMepqFCFW8-J6K5pRYqH1HhurAPEYqqQ/exec'
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430mbqbMs9P1uwrfwyGky95pY4QmcA3vd1TiHIE2ylG7x2uyxZu/exec'
 const CACHE_KEY  = 'sheets_cache_v1'
 const CACHE_TS   = 'sheets_cache_ts_v1'
 const CACHE_TTL  = 5 * 60 * 1000 // 5 minutes

@@ -1,5 +1,5 @@
 // ── Hardcoded sheet URL — never changes ───────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_m7qzOLcOkDLAcFIHEQd6JAPWLmuunspNtNxMepqFCFW8-J6K5pRYqH1HhurAPEYqqQ/exec'
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430mbqbMs9P1uwrfwyGky95pY4QmcA3vd1TiHIE2ylG7x2uyxZu/exec'
 
 export function getSheetsUrl()        { return SCRIPT_URL }
 export function setSheetsUrl(url)     { /* no-op — URL is hardcoded */ }
