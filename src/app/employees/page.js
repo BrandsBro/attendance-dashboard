@@ -21,8 +21,6 @@ export default function EmployeesPage() {
     addOption, removeOption,
   loading,
   } = useEmployeeProfiles()
-  
-  if (loading) return <LoadingScreen message="Loading employees from Google Sheets…" />
 
   const [selected,      setSelected]      = useState(null)
   const [showAdd,       setShowAdd]       = useState(false)
@@ -87,6 +85,8 @@ export default function EmployeesPage() {
 
   const selectedProfile = selected ? profiles[selected] : null
   const selectedStats   = selected ? summaryEmployees.find(e => e.userId === selected) ?? null : null
+
+  if (loading) return <LoadingScreen message="Loading employees from Google Sheets…" />
 
   return (
     <div className="app-shell">
