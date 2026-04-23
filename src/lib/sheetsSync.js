@@ -1,33 +1,34 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_m7qzOLcOkDLAcFIHEQd6JAPWLmuunspNtNxMepqFCFW8-J6K5pRYqH1HhurAPEYqqQ/exec'
 
-async function post(action, payload) {
+async function post(payload) {
   try {
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action, ...payload }),
+    const res  = await fetch(SCRIPT_URL, {
+      method:  'POST',
+      body:    JSON.stringify(payload),
     })
     const text = await res.text()
     try { return JSON.parse(text) }
     catch { return { ok: false, error: text } }
-  } catch (err) {
-    console.error('Sheets sync error:', err)
+  } catch(err) {
     return { ok: false, error: err.message }
   }
 }
 
 export async function pingSheets() {
   try {
-    const res = await fetch(SCRIPT_URL + '?action=ping')
-    const data = await res.json()
-    return data
+    const res  = await fetch(SCRIPT_URL + '?action=ping')
+    return await res.json()
   } catch(e) {
     return { ok: false, error: e.message }
   }
 }
 
-function makeSheetPayload(rows) {
-  if (!rows || rows.length === 0) return null
-  return { headers: Object.keys(rows[0]), rows }
+// Convert object array to sheet payload — always returns {headers:[], rows:[]}
+function toPayload(rows) {
+  if (!rows || !Array.isArray(rows) || rows.length === 0) return null
+  const headers = Object.keys(rows[0])
+  if (!headers || headers.length === 0) return null
+  return { headers, rows }
 }
 
 export async function syncAll({
@@ -36,158 +37,173 @@ export async function syncAll({
 }) {
   const data = {}
 
-  // Employees
-  if (profiles && Object.keys(profiles).length > 0) {
-    const rows = Object.values(profiles).map(p => ({
-      'User ID':            p.userId             || '',
-      'Name':               p.name               || '',
-      'Designation':        p.designation        || '',
-      'Department':         p.department         || '',
-      'Employment Status':  p.employmentStatus   || '',
-      'Join Date':          p.joinDate           || '',
-      'Gender':             p.gender             || '',
-      'Blood Group':        p.bloodGroup         || '',
-      'Phone':              p.phone              || '',
-      'Email':              p.email              || '',
-      'Address':            p.address            || '',
-      'Emergency Name':     p.emergencyName      || '',
-      'Emergency Phone':    p.emergencyPhone     || '',
-      'Shift':              p.shift              || '',
-      'Casual Used':        p.casualUsed         ?? 0,
-      'Sick Used':          p.sickUsed           ?? 0,
-      'Notes':              p.notes              || '',
-      'Last Updated':       new Date().toISOString(),
-    }))
-    const p = makeSheetPayload(rows)
-    if (p) data['Employees'] = p
-  }
-
-  // Attendance Summary
-  if (summary?.employees?.length > 0) {
-    const rows = summary.employees.map(e => ({
-      'User ID':        e.userId                || '',
-      'Name':           e.name                  || '',
-      'Department':     e.department            || '',
-      'Shift':          e.shift                 || '',
-      'Working Days':   e.workingDays           ?? 0,
-      'Presence (min)': e.totalPresenceMinutes  ?? 0,
-      'Late (min)':     e.totalLateMinutes      ?? 0,
-      'Overtime (min)': e.totalOvertimeMinutes  ?? 0,
-      'Late Days':      e.lateDays              ?? 0,
-      'Date From':      summary.dateRange?.from || '',
-      'Date To':        summary.dateRange?.to   || '',
-      'Last Updated':   new Date().toISOString(),
-    }))
-    const p = makeSheetPayload(rows)
-    if (p) data['Attendance_Summary'] = p
-  }
-
-  // Leave Records
-  if (leaveRecords && Object.keys(leaveRecords).length > 0) {
-    const rows = []
-    for (const [userId, list] of Object.entries(leaveRecords)) {
-      for (const r of (list || [])) {
-        rows.push({
-          'ID':            r.id        || '',
-          'User ID':       userId,
-          'Employee Name': r.empName   || '',
-          'Type':          r.type      || '',
-          'From Date':     r.fromDate  || '',
-          'To Date':       r.toDate    || '',
-          'Days':          r.days      ?? 0,
-          'Reason':        r.reason    || '',
-          'Created At':    r.createdAt || '',
-        })
+  try {
+    // ── Employees ──────────────────────────────────────────
+    if (profiles) {
+      const vals = Object.values(profiles)
+      if (vals.length > 0) {
+        const rows = vals.map(p => ({
+          'User ID':           String(p.userId          || ''),
+          'Name':              String(p.name            || ''),
+          'Designation':       String(p.designation     || ''),
+          'Department':        String(p.department      || ''),
+          'Employment Status': String(p.employmentStatus|| ''),
+          'Join Date':         String(p.joinDate        || ''),
+          'Gender':            String(p.gender          || ''),
+          'Blood Group':       String(p.bloodGroup      || ''),
+          'Phone':             String(p.phone           || ''),
+          'Email':             String(p.email           || ''),
+          'Address':           String(p.address         || ''),
+          'Emergency Name':    String(p.emergencyName   || ''),
+          'Emergency Phone':   String(p.emergencyPhone  || ''),
+          'Shift':             String(p.shift           || ''),
+          'Casual Used':       Number(p.casualUsed      ?? 0),
+          'Sick Used':         Number(p.sickUsed        ?? 0),
+          'Notes':             String(p.notes           || ''),
+          'Last Updated':      new Date().toISOString(),
+        }))
+        const p = toPayload(rows)
+        if (p) data['Employees'] = p
       }
     }
-    const p = makeSheetPayload(rows)
-    if (p) data['Leave_Records'] = p
-  }
 
-  // Payroll Settings
-  if (payrollSettings && Object.keys(payrollSettings).length > 0) {
-    const rows = Object.entries(payrollSettings).map(([userId, s]) => ({
-      'User ID':                  userId,
-      'Basic Salary':             s.basicSalary           ?? 0,
-      'Working Days/Month':       s.workingDaysPerMonth   ?? 26,
-      'Late Days Per Deduction':  s.lateDaysPerDeduction  ?? 3,
-      'OT Hours Per Day':         s.overtimeHoursPerDay   ?? 8,
-      'Currency':                 s.currency              || 'BDT',
-      'Last Updated':             new Date().toISOString(),
-    }))
-    const p = makeSheetPayload(rows)
-    if (p) data['Payroll_Settings'] = p
-  }
+    // ── Attendance Summary ─────────────────────────────────
+    if (summary?.employees?.length > 0) {
+      const rows = summary.employees.map(e => ({
+        'User ID':        String(e.userId               || ''),
+        'Name':           String(e.name                 || ''),
+        'Department':     String(e.department           || ''),
+        'Shift':          String(e.shift                || ''),
+        'Working Days':   Number(e.workingDays          ?? 0),
+        'Presence (min)': Number(e.totalPresenceMinutes ?? 0),
+        'Late (min)':     Number(e.totalLateMinutes     ?? 0),
+        'Overtime (min)': Number(e.totalOvertimeMinutes ?? 0),
+        'Late Days':      Number(e.lateDays             ?? 0),
+        'Date From':      String(summary.dateRange?.from|| ''),
+        'Date To':        String(summary.dateRange?.to  || ''),
+        'Last Updated':   new Date().toISOString(),
+      }))
+      const p = toPayload(rows)
+      if (p) data['Attendance_Summary'] = p
+    }
 
-  // Shift Overrides
-  if (shiftOverrides && Object.keys(shiftOverrides).length > 0) {
-    const rows = []
-    for (const [userId, list] of Object.entries(shiftOverrides)) {
-      for (const o of (list || [])) {
+    // ── Leave Records ──────────────────────────────────────
+    if (leaveRecords) {
+      const rows = []
+      for (const [userId, list] of Object.entries(leaveRecords)) {
+        for (const r of (Array.isArray(list) ? list : [])) {
+          rows.push({
+            'ID':            String(r.id        || ''),
+            'User ID':       String(userId),
+            'Employee Name': String(r.empName   || ''),
+            'Type':          String(r.type      || ''),
+            'From Date':     String(r.fromDate  || ''),
+            'To Date':       String(r.toDate    || ''),
+            'Days':          Number(r.days      ?? 0),
+            'Reason':        String(r.reason    || ''),
+            'Created At':    String(r.createdAt || ''),
+          })
+        }
+      }
+      const p = toPayload(rows)
+      if (p) data['Leave_Records'] = p
+    }
+
+    // ── Payroll Settings ───────────────────────────────────
+    if (payrollSettings) {
+      const rows = []
+      for (const [userId, s] of Object.entries(payrollSettings)) {
         rows.push({
-          'ID':            o.id        || '',
-          'User ID':       userId,
-          'Employee Name': o.empName   || '',
-          'From Date':     o.fromDate  || '',
-          'To Date':       o.toDate    || '',
-          'Shift':         o.shift     || '',
-          'Login':         o.login     || '',
-          'Logout':        o.logout    || '',
-          'Reason':        o.reason    || '',
-          'Created At':    o.createdAt || '',
+          'User ID':                  String(userId),
+          'Basic Salary':             Number(s.basicSalary           ?? 0),
+          'Working Days/Month':       Number(s.workingDaysPerMonth   ?? 26),
+          'Late Days Per Deduction':  Number(s.lateDaysPerDeduction  ?? 3),
+          'OT Hours Per Day':         Number(s.overtimeHoursPerDay   ?? 8),
+          'Currency':                 String(s.currency              || 'BDT'),
+          'Last Updated':             new Date().toISOString(),
         })
       }
+      const p = toPayload(rows)
+      if (p) data['Payroll_Settings'] = p
     }
-    const p = makeSheetPayload(rows)
-    if (p) data['Shift_Overrides'] = p
-  }
 
-  // Holidays
-  if (holidays?.length > 0) {
-    const rows = holidays.map(h => ({
-      'Date':     typeof h === 'string' ? h : (h.date  || ''),
-      'Label':    typeof h === 'string' ? '' : (h.label || ''),
-      'Added At': new Date().toISOString(),
-    }))
-    const p = makeSheetPayload(rows)
-    if (p) data['Holidays'] = p
-  }
+    // ── Shift Overrides ────────────────────────────────────
+    if (shiftOverrides) {
+      const rows = []
+      for (const [userId, list] of Object.entries(shiftOverrides)) {
+        for (const o of (Array.isArray(list) ? list : [])) {
+          rows.push({
+            'ID':            String(o.id        || ''),
+            'User ID':       String(userId),
+            'Employee Name': String(o.empName   || ''),
+            'From Date':     String(o.fromDate  || ''),
+            'To Date':       String(o.toDate    || ''),
+            'Shift':         String(o.shift     || ''),
+            'Login':         String(o.login     || ''),
+            'Logout':        String(o.logout    || ''),
+            'Reason':        String(o.reason    || ''),
+            'Created At':    String(o.createdAt || ''),
+          })
+        }
+      }
+      const p = toPayload(rows)
+      if (p) data['Shift_Overrides'] = p
+    }
 
-  // Schedules
-  if (schedules && Object.keys(schedules).length > 0) {
-    const rows = Object.values(schedules).map(s => ({
-      'User ID':     s.userId              || '',
-      'Name':        s.name                || '',
-      'Login Time':  s.scheduledLoginTime  || '09:00',
-      'Logout Time': s.scheduledLogoutTime || '18:00',
-      'Grace (min)': s.gracePeriodMinutes  ?? 0,
-      'Shift':       s.shift               || '',
-      'Last Updated':new Date().toISOString(),
-    }))
-    const p = makeSheetPayload(rows)
-    if (p) data['Schedules'] = p
-  }
+    // ── Holidays ───────────────────────────────────────────
+    if (Array.isArray(holidays) && holidays.length > 0) {
+      const rows = holidays.map(h => ({
+        'Date':     String(typeof h === 'string' ? h : (h?.date  || '')),
+        'Label':    String(typeof h === 'string' ? '' : (h?.label || '')),
+        'Added At': new Date().toISOString(),
+      }))
+      const p = toPayload(rows)
+      if (p) data['Holidays'] = p
+    }
 
-  // Dropdown Options
-  if (options && Object.keys(options).length > 0) {
-    const rows = []
-    for (const [field, values] of Object.entries(options)) {
-      for (const value of (values || [])) {
-        rows.push({
-          'Field':    field,
-          'Value':    value,
-          'Added At': new Date().toISOString(),
-        })
+    // ── Schedules ──────────────────────────────────────────
+    if (schedules) {
+      const vals = Object.values(schedules)
+      if (vals.length > 0) {
+        const rows = vals.map(s => ({
+          'User ID':     String(s.userId             || ''),
+          'Name':        String(s.name               || ''),
+          'Login Time':  String(s.scheduledLoginTime || '09:00'),
+          'Logout Time': String(s.scheduledLogoutTime|| '18:00'),
+          'Grace (min)': Number(s.gracePeriodMinutes ?? 0),
+          'Shift':       String(s.shift              || ''),
+          'Last Updated':new Date().toISOString(),
+        }))
+        const p = toPayload(rows)
+        if (p) data['Schedules'] = p
       }
     }
-    const p = makeSheetPayload(rows)
-    if (p) data['Dropdown_Options'] = p
-  }
 
-  if (Object.keys(data).length === 0) {
-    return { ok: false, error: 'No data to sync' }
-  }
+    // ── Dropdown Options ───────────────────────────────────
+    if (options) {
+      const rows = []
+      for (const [field, values] of Object.entries(options)) {
+        for (const value of (Array.isArray(values) ? values : [])) {
+          rows.push({
+            'Field':    String(field),
+            'Value':    String(value),
+            'Added At': new Date().toISOString(),
+          })
+        }
+      }
+      const p = toPayload(rows)
+      if (p) data['Dropdown_Options'] = p
+    }
 
-  console.log('Syncing sheets:', Object.keys(data))
-  return post('syncAll', { data })
+    if (Object.keys(data).length === 0) {
+      return { ok: false, error: 'No data to sync — upload attendance data first' }
+    }
+
+    console.log('Syncing', Object.keys(data).length, 'sheets:', Object.keys(data))
+    return await post({ action: 'syncAll', data })
+
+  } catch(err) {
+    console.error('syncAll error:', err)
+    return { ok: false, error: err.message }
+  }
 }
