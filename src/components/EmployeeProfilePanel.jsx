@@ -123,8 +123,8 @@ export default function EmployeeProfilePanel({
                     </select>
                   </label>
                   <label className="form-label">
-                    Employment Type
-                    <select className="input" value={form.employmentType} onChange={e => set('employmentType', e.target.value)}>
+                    Employment Status
+                    <select className="input" value={form.employmentStatus} onChange={e => set('employmentStatus', e.target.value)}>
                       {EMPLOYMENT_STATUSES.map(t => <option key={t}>{t}</option>)}
                     </select>
                   </label>
