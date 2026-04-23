@@ -208,7 +208,7 @@ export async function syncAll(payload) {
 }
 
 export async function fetchAllFromSheets() {
-  const res  = await fetch(`/api/sheets?url=${encodeURIComponent(SCRIPT_URL)}&action=readAll`)
+  const res  = await fetch('/api/sheets?url=' + encodeURIComponent(SCRIPT_URL) + '&action=readAll')
   const json = await res.json()
   if (json.error) throw new Error(json.error)
   return json
