@@ -6,6 +6,9 @@ import {
   loadPhotos, savePhoto, removePhoto,
   loadDropdownOptions, saveDropdownOptions,
 } from '@/lib/employeeProfiles'
+import { syncEmployees } from '@/lib/googleSheetSync'
+import { fetchAllFromSheets } from '@/lib/googleSheetSync'
+import { parseEmployeesFromSheets } from '@/hooks/useSheetsData'
 
 export const DEFAULT_DESIGNATIONS = [
   'Manager','Senior Manager','Senior Executive','Executive',
@@ -31,15 +34,20 @@ export function useEmployeeProfiles() {
     departments:  DEFAULT_DEPARTMENTS,
     shifts:       DEFAULT_SHIFTS,
   })
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    const raw  = loadProfiles()
-    const saved = {}
-    for (const [k, v] of Object.entries(raw)) {
+    // 1. Load from localStorage immediately (instant)
+    const local = loadProfiles()
+    const normalised = {}
+    for (const [k, v] of Object.entries(local)) {
       const id = String(k)
-      saved[id] = { ...v, userId: id }
+      normalised[id] = { ...v, userId: id }
     }
-    setProfiles(saved)
+    if (Object.keys(normalised).length > 0) {
+      setProfiles(normalised)
+    }
+
     setPhotos(loadPhotos())
     const opts = loadDropdownOptions()
     setOptions({
@@ -47,34 +55,54 @@ export function useEmployeeProfiles() {
       departments:  opts.departments  ?? DEFAULT_DEPARTMENTS,
       shifts:       opts.shifts       ?? DEFAULT_SHIFTS,
     })
+
+    // 2. Then fetch fresh from Sheets (async)
+    fetchAllFromSheets()
+      .then(sheetsData => {
+        const fromSheets = parseEmployeesFromSheets(sheetsData)
+        if (Object.keys(fromSheets).length > 0) {
+          // Sheets is the master — update localStorage cache
+          saveProfiles(fromSheets)
+          setProfiles(fromSheets)
+        }
+      })
+      .catch(e => console.warn('Could not fetch from Sheets:', e.message))
   }, [])
+
+  // Push to Sheets immediately on every change
+  async function pushToSheets(updatedProfiles) {
+    try {
+      await syncEmployees(updatedProfiles)
+    } catch(e) {
+      console.warn('Sheets push failed:', e.message)
+    }
+  }
 
   const addEmployee = useCallback((data) => {
     setProfiles(prev => {
       const id   = String(data.userId)
-      const next = {
-        ...prev,
-        [id]: {
-          userId:           id,
-          name:             data.name             || '',
-          department:       data.department       || '',
-          designation:      data.designation      || '',
-          employmentStatus: data.employmentStatus || 'Permanent',
-          joinDate:         data.joinDate         || '',
-          gender:           data.gender           || '',
-          bloodGroup:       data.bloodGroup       || '',
-          phone:            data.phone            || '',
-          email:            data.email            || '',
-          address:          data.address          || '',
-          emergencyName:    data.emergencyName    || '',
-          emergencyPhone:   data.emergencyPhone   || '',
-          shift:            data.shift            || '',
-          casualUsed:       0,
-          sickUsed:         0,
-          notes:            data.notes            || '',
-        }
+      const profile = {
+        userId:           id,
+        name:             data.name             || '',
+        department:       data.department       || '',
+        designation:      data.designation      || '',
+        employmentStatus: data.employmentStatus || 'Permanent',
+        joinDate:         data.joinDate         || '',
+        gender:           data.gender           || '',
+        bloodGroup:       data.bloodGroup       || '',
+        phone:            data.phone            || '',
+        email:            data.email            || '',
+        address:          data.address          || '',
+        emergencyName:    data.emergencyName    || '',
+        emergencyPhone:   data.emergencyPhone   || '',
+        shift:            data.shift            || '',
+        casualUsed:       0,
+        sickUsed:         0,
+        notes:            data.notes            || '',
       }
+      const next = { ...prev, [id]: profile }
       saveProfiles(next)
+      pushToSheets(next)
       return next
     })
   }, [])
@@ -84,6 +112,7 @@ export function useEmployeeProfiles() {
     setProfiles(prev => {
       const next = { ...prev, [id]: { ...prev[id], ...data, userId: id } }
       saveProfiles(next)
+      pushToSheets(next)
       return next
     })
   }, [])
@@ -94,6 +123,7 @@ export function useEmployeeProfiles() {
       const next = { ...prev }
       delete next[id]
       saveProfiles(next)
+      pushToSheets(next)
       return next
     })
     deleteProfile(id)
@@ -120,6 +150,7 @@ export function useEmployeeProfiles() {
       const key  = type === 'casual' ? 'casualUsed' : 'sickUsed'
       const next = { ...prev, [id]: { ...prev[id], [key]: ((prev[id]?.[key]) ?? 0) + days } }
       saveProfiles(next)
+      pushToSheets(next)
       return next
     })
   }, [])
@@ -131,6 +162,7 @@ export function useEmployeeProfiles() {
       const cur  = prev[id]?.[key] ?? 0
       const next = { ...prev, [id]: { ...prev[id], [key]: Math.max(0, cur - days) } }
       saveProfiles(next)
+      pushToSheets(next)
       return next
     })
   }, [])
@@ -152,7 +184,7 @@ export function useEmployeeProfiles() {
   }, [])
 
   return {
-    profiles, photos, options,
+    profiles, photos, options, syncing,
     addEmployee, updateProfile, removeEmployee,
     uploadPhoto, deletePhoto,
     addLeave, removeLeave,
