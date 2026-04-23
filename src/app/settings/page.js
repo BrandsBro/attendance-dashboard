@@ -59,8 +59,6 @@ export default function SettingsPage() {
   const { overrides }                                 = useShiftOverrides()
   const { importFromSheets, status: importStatus, message: importMessage } = useSheetsImport()
 
-  const [url,        setUrl]        = useState('')
-  const [urlSaved,   setUrlSaved]   = useState(false)
   const [pingStatus, setPingStatus] = useState('idle')
   const [syncStatus, setSyncStatus] = useState('idle')
   const [syncMsg,    setSyncMsg]    = useState('')
@@ -76,16 +74,9 @@ export default function SettingsPage() {
   const [syncSched,  setSyncSched]  = useState(true)
 
   useEffect(() => {
-    setUrl(getSheetsUrl())
     const ls = localStorage.getItem('last_sheets_sync')
     if (ls) setLastSync(new Date(ls).toLocaleString())
   }, [])
-
-  function saveUrl() {
-    setSheetsUrl(url.trim())
-    setUrlSaved(true)
-    setTimeout(() => setUrlSaved(false), 2000)
-  }
 
   async function handlePing() {
     setPingStatus('syncing')
@@ -172,28 +163,17 @@ export default function SettingsPage() {
             </div>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-              <div style={{ background: 'var(--bg)', borderRadius: 8, padding: '12px 14px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
-                <strong style={{ color: 'var(--text)' }}>Setup steps:</strong><br />
-                1. Open <strong>script.google.com</strong> → New Project<br />
-                2. Paste the <code>Code.gs</code> file contents<br />
-                3. Run <strong>setupAllSheets()</strong> once<br />
-                4. Deploy → New Deployment → Web App<br />
-                5. Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong><br />
-                6. Paste the Web App URL below
+              <div style={{ background: '#f0fdf4', borderRadius: 8, padding: '12px 14px', fontSize: 12, color: '#065f46', lineHeight: 1.7, border: '1px solid #86efac' }}>
+                <strong>✓ Google Sheets is connected and ready.</strong><br />
+                Data syncs automatically when you make changes. You can also manually sync below.
               </div>
 
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  className="input"
-                  style={{ flex: 1 }}
-                  placeholder="https://script.google.com/macros/s/…/exec"
-                  value={url}
-                  onChange={e => setUrl(e.target.value)}
-                />
-                <button className="btn btn-secondary" onClick={saveUrl}>
-                  {urlSaved ? '✓ Saved!' : 'Save URL'}
-                </button>
-                <button className="btn btn-ghost" onClick={handlePing} disabled={!url}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'var(--bg)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 11, color: '#059669', fontWeight: 600 }}>● Connected</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  HR Management Sheet — Auto-sync enabled
+                </span>
+                <button className="btn btn-ghost" onClick={handlePing}>
                   Test Connection
                 </button>
               </div>
@@ -350,3 +330,4 @@ export default function SettingsPage() {
     </div>
   )
 }
+// Auto-sync is handled by useAutoSync hook in layout

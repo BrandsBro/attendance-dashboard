@@ -1,26 +1,15 @@
-const SYNC_URL_KEY = 'gsheets_sync_url'
+// ── Hardcoded sheet URL — never changes ───────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_m7qzOLcOkDLAcFIHEQd6JAPWLmuunspNtNxMepqFCFW8-J6K5pRYqH1HhurAPEYqqQ/exec'
 
-export function getSheetsUrl() {
-  if (typeof window === 'undefined') return ''
-  return localStorage.getItem(SYNC_URL_KEY) || ''
-}
-
-export function setSheetsUrl(url) {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(SYNC_URL_KEY, url)
-}
-
-export function hasSheetsUrl() {
-  return Boolean(getSheetsUrl())
-}
+export function getSheetsUrl()        { return SCRIPT_URL }
+export function setSheetsUrl(url)     { /* no-op — URL is hardcoded */ }
+export function hasSheetsUrl()        { return true }
 
 async function post(action, data) {
-  const url = getSheetsUrl()
-  if (!url) throw new Error('Google Sheets URL not configured. Go to Settings.')
   const res = await fetch('/api/sheets', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ url, action, data }),
+    body:    JSON.stringify({ url: SCRIPT_URL, action, data }),
   })
   const json = await res.json()
   if (json.error) throw new Error(json.error)
@@ -28,9 +17,7 @@ async function post(action, data) {
 }
 
 export async function pingSheets() {
-  const url = getSheetsUrl()
-  if (!url) throw new Error('URL not set')
-  const res  = await fetch(`/api/sheets?url=${encodeURIComponent(url)}&action=ping`)
+  const res  = await fetch(`/api/sheets?url=${encodeURIComponent(SCRIPT_URL)}&action=ping`)
   const json = await res.json()
   if (!json.ok) throw new Error(json.message || 'Ping failed')
   return json
@@ -52,7 +39,6 @@ export async function syncAll(payload) {
 
   const data = {}
 
-  // Employees
   if (employees && Object.keys(employees).length > 0) {
     const rows = Object.values(employees).map(p => ({
       'User ID':            String(p.userId            || ''),
@@ -78,21 +64,19 @@ export async function syncAll(payload) {
     if (p) data['Employees'] = p
   }
 
-  // Attendance Records
   if (Array.isArray(attendanceRecords) && attendanceRecords.length > 0) {
     const rows = attendanceRecords.map(r => ({
-      'Serial No':  String(r.serialNo  ?? ''),
-      'User ID':    String(r.userId    || ''),
-      'Name':       String(r.name      || ''),
-      'Department': String(r.department|| ''),
-      'Date/Time':  String(r.dateTime  || ''),
-      'Status':     String(r.status    || ''),
+      'Serial No':  String(r.serialNo   ?? ''),
+      'User ID':    String(r.userId     || ''),
+      'Name':       String(r.name       || ''),
+      'Department': String(r.department || ''),
+      'Date/Time':  String(r.dateTime   || ''),
+      'Status':     String(r.status     || ''),
     }))
     const p = toRows(rows)
     if (p) data['Attendance_Records'] = p
   }
 
-  // Attendance Summary
   if (attendanceSummary?.employees?.length > 0) {
     const rows = attendanceSummary.employees.map(e => ({
       'User ID':        String(e.userId               || ''),
@@ -112,7 +96,6 @@ export async function syncAll(payload) {
     if (p) data['Attendance_Summary'] = p
   }
 
-  // Leave Records
   if (leaveRecords && Object.keys(leaveRecords).length > 0) {
     const rows = []
     for (const [userId, list] of Object.entries(leaveRecords)) {
@@ -134,7 +117,6 @@ export async function syncAll(payload) {
     if (p) data['Leave_Records'] = p
   }
 
-  // Payroll Settings
   if (payrollSettings && Object.keys(payrollSettings).length > 0) {
     const rows = Object.entries(payrollSettings).map(([userId, s]) => ({
       'User ID':                 String(userId),
@@ -149,7 +131,6 @@ export async function syncAll(payload) {
     if (p) data['Payroll_Settings'] = p
   }
 
-  // Payroll Summary
   if (Array.isArray(payrollSummary) && payrollSummary.length > 0) {
     const rows = payrollSummary.map(p => ({
       'User ID':         String(p.userId           || ''),
@@ -173,7 +154,6 @@ export async function syncAll(payload) {
     if (p) data['Payroll_Summary'] = p
   }
 
-  // Shift Overrides
   if (shiftOverrides && Object.keys(shiftOverrides).length > 0) {
     const rows = []
     for (const [userId, list] of Object.entries(shiftOverrides)) {
@@ -196,7 +176,6 @@ export async function syncAll(payload) {
     if (p) data['Shift_Overrides'] = p
   }
 
-  // Holidays
   if (Array.isArray(holidays) && holidays.length > 0) {
     const rows = holidays.map(h => ({
       'Date':     String(typeof h === 'string' ? h : (h?.date  || '')),
@@ -207,15 +186,14 @@ export async function syncAll(payload) {
     if (p) data['Holidays'] = p
   }
 
-  // Schedules
   if (schedules && Object.keys(schedules).length > 0) {
     const rows = Object.values(schedules).map(s => ({
-      'User ID':     String(s.userId             || ''),
-      'Name':        String(s.name               || ''),
-      'Login Time':  String(s.scheduledLoginTime || '09:00'),
-      'Logout Time': String(s.scheduledLogoutTime|| '18:00'),
-      'Grace (min)': Number(s.gracePeriodMinutes ?? 0),
-      'Shift':       String(s.shift              || ''),
+      'User ID':     String(s.userId              || ''),
+      'Name':        String(s.name                || ''),
+      'Login Time':  String(s.scheduledLoginTime  || '09:00'),
+      'Logout Time': String(s.scheduledLogoutTime || '18:00'),
+      'Grace (min)': Number(s.gracePeriodMinutes  ?? 0),
+      'Shift':       String(s.shift               || ''),
       'Last Updated':new Date().toISOString(),
     }))
     const p = toRows(rows)
@@ -226,14 +204,11 @@ export async function syncAll(payload) {
     throw new Error('No data to sync — load attendance data first')
   }
 
-  console.log('Syncing sheets:', Object.keys(data))
   return post('syncAll', data)
 }
 
 export async function fetchAllFromSheets() {
-  const url = getSheetsUrl()
-  if (!url) throw new Error('URL not set')
-  const res  = await fetch(`/api/sheets?url=${encodeURIComponent(url)}&action=readAll`)
+  const res  = await fetch(`/api/sheets?url=${encodeURIComponent(SCRIPT_URL)}&action=readAll`)
   const json = await res.json()
   if (json.error) throw new Error(json.error)
   return json
@@ -242,17 +217,10 @@ export async function fetchAllFromSheets() {
 export function buildPayrollSummaryRows(employees, getSettingsFn, recordsByUserId, currency) {
   return employees.map(emp => {
     const settings = getSettingsFn(emp.userId)
-    return {
-      userId:      emp.userId,
-      name:        emp.name,
-      currency:    settings.currency || currency || 'BDT',
-      ...emp,
-      basicSalary: settings.basicSalary,
-    }
+    return { ...emp, basicSalary: settings.basicSalary, currency: settings.currency || currency || 'BDT' }
   })
 }
 
-// Individual sync exports for backward compatibility
 export async function syncEmployees(profiles)        { return syncAll({ employees: profiles }) }
 export async function syncAttendanceRecords(records) { return syncAll({ attendanceRecords: records }) }
 export async function syncAttendanceSummary(summary) { return syncAll({ attendanceSummary: summary }) }
