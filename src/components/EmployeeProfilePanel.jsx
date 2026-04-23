@@ -3,10 +3,7 @@
 import { useState, useRef } from 'react'
 import { calcAccruedLeave, calcRemainingCasual } from '@/lib/employeeProfiles'
 import { fmtMinutes } from '@/lib/calculateStats'
-import {
-  DESIGNATIONS, DEPARTMENTS,
-  EMPLOYMENT_TYPES, GENDERS, BLOOD_GROUPS,
-} from '@/hooks/useEmployeeProfiles'
+import { EMPLOYMENT_TYPES, GENDERS, BLOOD_GROUPS } from '@/hooks/useEmployeeProfiles'
 
 const COLORS = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#0284c7']
 function getColor(id)   { return COLORS[id.charCodeAt(id.length-1) % COLORS.length] }
@@ -15,7 +12,7 @@ function getInitials(n) { return n.split(' ').map(w => w[0]).join('').toUpperCas
 const TABS = ['Profile','Leave','Attendance']
 
 export default function EmployeeProfilePanel({
-  profile, stats, photo,
+  profile, stats, photo, options,
   onUpdate, onUploadPhoto, onDeletePhoto,
   onAddLeave, onRemoveLeave, onClose,
 }) {
@@ -27,23 +24,15 @@ export default function EmployeeProfilePanel({
   const [leaveMode, setLeaveMode] = useState('add')
   const photoRef = useRef(null)
 
+  const designations = options?.designations ?? []
+  const departments  = options?.departments  ?? []
+
   const accrued   = calcAccruedLeave(profile.joinDate)
   const remaining = calcRemainingCasual(profile)
 
-  function set(field, value) {
-    setForm(p => ({ ...p, [field]: value }))
-    setDirty(true)
-  }
-
-  function save() {
-    onUpdate(profile.userId, form)
-    setDirty(false)
-  }
-
-  function handlePhoto(e) {
-    const file = e.target.files?.[0]
-    if (file) onUploadPhoto(profile.userId, file)
-  }
+  function set(field, value) { setForm(p => ({ ...p, [field]: value })); setDirty(true) }
+  function save() { onUpdate(profile.userId, form); setDirty(false) }
+  function handlePhoto(e) { const f = e.target.files?.[0]; if (f) onUploadPhoto(profile.userId, f) }
 
   function handleLeave() {
     if (leaveMode === 'add') onAddLeave(profile.userId, leaveType, leaveDays)
@@ -55,23 +44,18 @@ export default function EmployeeProfilePanel({
       <div className="detail-backdrop" onClick={onClose} />
       <div className="detail-panel">
 
-        {/* ── Header ── */}
         <div className="detail-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-
-            {/* Photo */}
             <div className="profile-photo-wrap" onClick={() => photoRef.current?.click()} title="Click to change photo">
               {photo
                 ? <img src={photo} alt={profile.name} className="profile-photo" />
-                : <div className="emp-avatar emp-avatar-lg" style={{ background: getColor(profile.userId) }}>{getInitials(profile.name)}</div>
-              }
+                : <div className="emp-avatar emp-avatar-lg" style={{ background: getColor(profile.userId) }}>{getInitials(profile.name)}</div>}
               <div className="photo-overlay">📷</div>
               {photo && (
-                <button className="photo-remove" onClick={e => { e.stopPropagation(); onDeletePhoto(profile.userId) }} title="Remove photo">✕</button>
+                <button className="photo-remove" onClick={e => { e.stopPropagation(); onDeletePhoto(profile.userId) }}>✕</button>
               )}
             </div>
             <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhoto} />
-
             <div>
               <div className="detail-name">{profile.name}</div>
               <div className="detail-dept">
@@ -89,26 +73,16 @@ export default function EmployeeProfilePanel({
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
 
-        {/* ── Tabs ── */}
-        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border)', padding: '0 24px' }}>
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 24px' }}>
           {TABS.map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                padding: '10px 16px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                fontSize: 13,
-                fontWeight: tab === t ? 600 : 400,
-                color: tab === t ? 'var(--accent)' : 'var(--text-muted)',
-                borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
-                marginBottom: -1,
-              }}
-            >
-              {t}
-            </button>
+            <button key={t} onClick={() => setTab(t)} style={{
+              padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: tab === t ? 600 : 400,
+              color: tab === t ? 'var(--accent)' : 'var(--text-muted)',
+              borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
+              marginBottom: -1,
+            }}>{t}</button>
           ))}
           {dirty && (
             <button className="btn btn-primary" style={{ marginLeft: 'auto', alignSelf: 'center', padding: '5px 14px' }} onClick={save}>
@@ -132,20 +106,20 @@ export default function EmployeeProfilePanel({
                   </label>
                   <label className="form-label">
                     Employee ID
-                    <input className="input" value={form.userId} disabled style={{ opacity: .6 }} />
+                    <input className="input" value={form.userId} onChange={e => set('userId', e.target.value)} />
                   </label>
                   <label className="form-label">
                     Designation
                     <select className="input" value={form.designation} onChange={e => set('designation', e.target.value)}>
                       <option value="">Select…</option>
-                      {DESIGNATIONS.map(d => <option key={d}>{d}</option>)}
+                      {designations.map(d => <option key={d}>{d}</option>)}
                     </select>
                   </label>
                   <label className="form-label">
                     Department
                     <select className="input" value={form.department} onChange={e => set('department', e.target.value)}>
                       <option value="">Select…</option>
-                      {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
+                      {departments.map(d => <option key={d}>{d}</option>)}
                     </select>
                   </label>
                   <label className="form-label">
@@ -184,11 +158,11 @@ export default function EmployeeProfilePanel({
                   </label>
                   <label className="form-label">
                     Email
-                    <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="name@company.com" />
+                    <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
                   </label>
-                  <label className="form-label" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label" style={{ gridColumn: '1/-1' }}>
                     Address
-                    <input className="input" value={form.address} onChange={e => set('address', e.target.value)} placeholder="Street, City" />
+                    <input className="input" value={form.address} onChange={e => set('address', e.target.value)} />
                   </label>
                 </div>
               </section>
@@ -209,14 +183,8 @@ export default function EmployeeProfilePanel({
 
               <section>
                 <div className="form-section-title">Notes</div>
-                <textarea
-                  className="input"
-                  rows={3}
-                  style={{ width: '100%', resize: 'vertical' }}
-                  value={form.notes}
-                  onChange={e => set('notes', e.target.value)}
-                  placeholder="Any additional notes…"
-                />
+                <textarea className="input" rows={3} style={{ width: '100%', resize: 'vertical' }}
+                  value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any additional notes…" />
               </section>
 
             </div>
@@ -225,7 +193,6 @@ export default function EmployeeProfilePanel({
           {/* ── LEAVE TAB ── */}
           {tab === 'Leave' && (
             <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-
               <div className="detail-pills">
                 <div className="detail-pill detail-pill-amber">
                   <div className="pill-val">{remaining}</div>
@@ -244,12 +211,10 @@ export default function EmployeeProfilePanel({
                   <div className="pill-lbl">Sick used</div>
                 </div>
               </div>
-
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', background: 'var(--bg)', padding: '10px 14px', borderRadius: 8 }}>
-                Accrual rate: 1.5 casual days per month from join date
-                {!profile.joinDate && <span style={{ color: 'var(--amber)' }}> — set join date in Profile tab to calculate</span>}
+              <div style={{ fontSize: 11, color: 'var(--text-subtle)', background: 'var(--bg)', padding: '10px 14px', borderRadius: 8 }}>
+                1.5 casual days accrued per month from join date
+                {!profile.joinDate && <span style={{ color: 'var(--amber)' }}> — set join date in Profile tab</span>}
               </div>
-
               <div>
                 <div className="form-section-title">Record Leave</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
@@ -261,21 +226,14 @@ export default function EmployeeProfilePanel({
                     <button className={`tab ${leaveMode === 'add'    ? 'active' : ''}`} onClick={() => setLeaveMode('add')}>Add</button>
                     <button className={`tab ${leaveMode === 'remove' ? 'active' : ''}`} onClick={() => setLeaveMode('remove')}>Remove</button>
                   </div>
-                  <input
-                    type="number"
-                    className="input"
-                    min={0.5} step={0.5}
-                    value={leaveDays}
-                    onChange={e => setLeaveDays(parseFloat(e.target.value) || 1)}
-                    style={{ width: 80 }}
-                  />
+                  <input type="number" className="input" min={0.5} step={0.5} value={leaveDays}
+                    onChange={e => setLeaveDays(parseFloat(e.target.value) || 1)} style={{ width: 80 }} />
                   <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>days</span>
                   <button className="btn btn-primary" onClick={handleLeave}>
                     {leaveMode === 'add' ? '+ Add' : '− Remove'} {leaveType} leave
                   </button>
                 </div>
               </div>
-
             </div>
           )}
 
@@ -283,7 +241,7 @@ export default function EmployeeProfilePanel({
           {tab === 'Attendance' && (
             <div style={{ padding: 24 }}>
               {!stats ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No attendance data available.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No attendance data available for this employee.</p>
               ) : (
                 <>
                   <div className="detail-pills" style={{ marginBottom: 20 }}>
@@ -299,25 +257,16 @@ export default function EmployeeProfilePanel({
                       <div className="pill-val">{stats.lateDays ?? 0}</div>
                       <div className="pill-lbl">Late days</div>
                     </div>
-                    <div className="detail-pill detail-pill-amber">
-                      <div className="pill-val">{fmtMinutes(stats.totalLateMinutes)}</div>
-                      <div className="pill-lbl">Late time</div>
-                    </div>
                     <div className="detail-pill detail-pill-violet">
                       <div className="pill-val">{fmtMinutes(stats.totalOvertimeMinutes)}</div>
                       <div className="pill-lbl">Overtime</div>
                     </div>
                   </div>
-
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>In</th>
-                        <th>Out</th>
-                        <th>Presence</th>
-                        <th>Late</th>
-                        <th>Overtime</th>
+                        <th>Date</th><th>In</th><th>Out</th>
+                        <th>Presence</th><th>Late</th><th>Overtime</th>
                       </tr>
                     </thead>
                     <tbody>
