@@ -149,7 +149,7 @@ export default function EmployeeProfilePanel({
                   <label className="form-label">
                     Shift
                     <select className="input" value={form.shift ?? ''} onChange={e => set('shift', e.target.value)}>
-                      <option value="">Selectxe2x80xa6</option>
+                      <option value="">Select...</option>
                       {(options?.shifts ?? []).map(s => <option key={s}>{s}</option>)}
                     </select>
                   </label>
