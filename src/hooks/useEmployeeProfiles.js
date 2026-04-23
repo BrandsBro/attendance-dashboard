@@ -38,7 +38,7 @@ export function useEmployeeProfiles(summaryEmployees = []) {
     const opts   = loadDropdownOptions()
     const merged = { ...saved }
     for (const emp of summaryEmployees) {
-      if (!merged[emp.userId]) merged[emp.userId] = makeDefault(emp)
+      if (!merged[emp.userId]) merged[String(emp.userId)] = makeDefault({...emp, userId: String(emp.userId)})
     }
     setProfiles(merged)
     setPhotos(pics)
@@ -51,6 +51,7 @@ export function useEmployeeProfiles(summaryEmployees = []) {
   }, [summaryEmployees.length])
 
   function makeDefault(emp) {
+    emp = { ...emp, userId: String(emp.userId ?? "") }
     return {
       userId: emp.userId, name: emp.name,
       department: emp.department ?? '', designation: '',

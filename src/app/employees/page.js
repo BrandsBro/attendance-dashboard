@@ -34,8 +34,8 @@ export default function EmployeesPage() {
   const summaryEmployees = summary?.employees ?? []
 
   const allIds = [...new Set([
-    ...summaryEmployees.map(e => e.userId),
-    ...Object.keys(profiles),
+    ...summaryEmployees.map(e => String(e.userId)),
+    ...Object.keys(profiles).map(String),
   ])]
 
   const allEmployees = allIds.map(id => ({

@@ -8,7 +8,7 @@ import { PRESET_SHIFTS }       from '@/lib/constants'
 
 const COLORS = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#0284c7']
 function getColor(id) { const s = String(id ?? "0"); return COLORS[s.charCodeAt(s.length-1) % COLORS.length] }
-function getInitials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) }
+function getInitials(name) { const n = String(name ?? "?"); return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) }
 
 export default function ShiftManagerPage() {
   const { summary, schedules } = useAttendanceData()
