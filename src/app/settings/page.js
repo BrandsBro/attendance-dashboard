@@ -248,7 +248,7 @@ export default function SettingsPage() {
               <button
                 className="btn btn-primary"
                 style={{ width: '100%', padding: '10px', fontSize: 14 }}
-                disabled={!url || syncStatus === 'syncing'}
+                disabled={syncStatus === 'syncing'}
                 onClick={handleSync}
               >
                 {syncStatus === 'syncing' ? '⟳ Syncing…' : '⬆ Sync Now to Google Sheets'}
@@ -310,7 +310,7 @@ export default function SettingsPage() {
               className="btn btn-secondary"
               style={{ alignSelf: 'flex-start', padding: '10px 24px', fontSize: 14 }}
               onClick={importFromSheets}
-              disabled={!url || importStatus === 'loading'}
+              disabled={importStatus === 'loading'}
             >
               {importStatus === 'loading' ? '⏳ Importing…' : '⬇ Import from Sheets'}
             </button>
