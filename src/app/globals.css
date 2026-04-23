@@ -1420,3 +1420,31 @@ button.sidebar-shift-toggle:hover {
   box-shadow: 0 20px 60px rgba(0,0,0,.2);
 }
 .badge-red { background: var(--red-light); color: var(--red); }
+
+.emp-card { position: relative; }
+
+.emp-card-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+
+.emp-card:hover .emp-card-actions { opacity: 1; }
+
+.emp-card-action-btn {
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.emp-card-action-btn:hover { background: var(--bg); color: var(--text); }
+.emp-card-action-btn.danger:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
