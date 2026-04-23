@@ -33,13 +33,31 @@ export function useEmployeeProfiles(summaryEmployees = []) {
   })
 
   useEffect(() => {
-    const saved  = loadProfiles()
-    const pics   = loadPhotos()
-    const opts   = loadDropdownOptions()
-    const merged = { ...saved }
-    for (const emp of summaryEmployees) {
-      if (!merged[emp.userId]) merged[String(emp.userId)] = makeDefault({...emp, userId: String(emp.userId)})
+    // Load saved profiles — normalise ALL keys to strings
+    const rawSaved = loadProfiles()
+    const saved = {}
+    for (const [k, v] of Object.entries(rawSaved)) {
+      saved[String(k)] = { ...v, userId: String(v.userId ?? k) }
     }
+
+    const pics  = loadPhotos()
+    const opts  = loadDropdownOptions()
+    const merged = { ...saved }
+
+    for (const emp of summaryEmployees) {
+      const id = String(emp.userId)
+      if (!merged[id]) {
+        merged[id] = makeDefault({ ...emp, userId: id })
+      } else {
+        // Keep saved profile but update attendance-derived fields
+        merged[id] = {
+          ...merged[id],
+          userId: id,
+          name: merged[id].name || emp.name,
+        }
+      }
+    }
+
     setProfiles(merged)
     setPhotos(pics)
     setOptions({
@@ -51,72 +69,87 @@ export function useEmployeeProfiles(summaryEmployees = []) {
   }, [summaryEmployees.length])
 
   function makeDefault(emp) {
-    emp = { ...emp, userId: String(emp.userId ?? "") }
     return {
-      userId: emp.userId, name: emp.name,
-      department: emp.department ?? '', designation: '',
-      employmentStatus: 'Permanent', joinDate: '',
-      gender: '', bloodGroup: '', phone: '', email: '',
-      address: '', emergencyName: '', emergencyPhone: '',
-      shift: emp.shift ?? '', casualUsed: 0, sickUsed: 0, notes: '',
+      userId:           String(emp.userId ?? ''),
+      name:             emp.name           || '',
+      department:       emp.department     || '',
+      designation:      '',
+      employmentStatus: 'Permanent',
+      joinDate:         '',
+      gender:           '',
+      bloodGroup:       '',
+      phone:            '',
+      email:            '',
+      address:          '',
+      emergencyName:    '',
+      emergencyPhone:   '',
+      shift:            emp.shift          || '',
+      casualUsed:       0,
+      sickUsed:         0,
+      notes:            '',
     }
   }
 
   const addEmployee = useCallback((data) => {
     setProfiles(prev => {
-      const next = { ...prev, [data.userId]: { ...makeDefault({ userId: data.userId, name: data.name }), ...data } }
+      const id   = String(data.userId)
+      const next = { ...prev, [id]: { ...makeDefault({ userId: id, name: data.name }), ...data, userId: id } }
       saveProfiles(next)
       return next
     })
   }, [])
 
   const updateProfile = useCallback((userId, data) => {
+    const id = String(userId)
     setProfiles(prev => {
-      const next = { ...prev, [userId]: { ...prev[userId], ...data } }
+      const next = { ...prev, [id]: { ...prev[id], ...data, userId: id } }
       saveProfiles(next)
       return next
     })
   }, [])
 
   const removeEmployee = useCallback((userId) => {
+    const id = String(userId)
     setProfiles(prev => {
       const next = { ...prev }
-      delete next[userId]
+      delete next[id]
       saveProfiles(next)
       return next
     })
-    deleteProfile(userId)
-    removePhoto(userId)
+    deleteProfile(id)
+    removePhoto(id)
   }, [])
 
   const uploadPhoto = useCallback((userId, file) => {
     const reader = new FileReader()
     reader.onload = e => {
-      savePhoto(userId, e.target.result)
-      setPhotos(prev => ({ ...prev, [userId]: e.target.result }))
+      savePhoto(String(userId), e.target.result)
+      setPhotos(prev => ({ ...prev, [String(userId)]: e.target.result }))
     }
     reader.readAsDataURL(file)
   }, [])
 
   const deletePhoto = useCallback((userId) => {
-    removePhoto(userId)
-    setPhotos(prev => { const n = { ...prev }; delete n[userId]; return n })
+    removePhoto(String(userId))
+    setPhotos(prev => { const n = { ...prev }; delete n[String(userId)]; return n })
   }, [])
 
   const addLeave = useCallback((userId, type, days) => {
+    const id = String(userId)
     setProfiles(prev => {
       const key  = type === 'casual' ? 'casualUsed' : 'sickUsed'
-      const next = { ...prev, [userId]: { ...prev[userId], [key]: ((prev[userId]?.[key]) ?? 0) + days } }
+      const next = { ...prev, [id]: { ...prev[id], [key]: ((prev[id]?.[key]) ?? 0) + days } }
       saveProfiles(next)
       return next
     })
   }, [])
 
   const removeLeave = useCallback((userId, type, days) => {
+    const id = String(userId)
     setProfiles(prev => {
       const key  = type === 'casual' ? 'casualUsed' : 'sickUsed'
-      const cur  = prev[userId]?.[key] ?? 0
-      const next = { ...prev, [userId]: { ...prev[userId], [key]: Math.max(0, cur - days) } }
+      const cur  = prev[id]?.[key] ?? 0
+      const next = { ...prev, [id]: { ...prev[id], [key]: Math.max(0, cur - days) } }
       saveProfiles(next)
       return next
     })
