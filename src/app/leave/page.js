@@ -9,7 +9,7 @@ import { calcDays, getUsedDays } from '@/lib/leaveRecords'
 import { calcAccruedLeave, calcRemainingCasual } from '@/lib/employeeProfiles'
 
 const COLORS = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#0284c7']
-function getColor(id) { return COLORS[id.charCodeAt(id.length-1) % COLORS.length] }
+function getColor(id) { const s = String(id ?? "0"); return COLORS[s.charCodeAt(s.length-1) % COLORS.length] }
 function getInitials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) }
 
 const LEAVE_TYPES = [
