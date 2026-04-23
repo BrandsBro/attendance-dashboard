@@ -1521,3 +1521,139 @@ button.sidebar-shift-toggle:hover {
 .emp-filter-pill.active .emp-filter-count {
   background: rgba(255,255,255,.25);
 }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.filter-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.filter-search-input {
+  width: 100%;
+  padding: 7px 12px 7px 30px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+}
+.filter-search-input:focus { border-color: var(--accent); background: var(--surface); }
+
+.filter-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.filter-select-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filter-select-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-subtle);
+  padding-left: 2px;
+}
+
+.filter-select {
+  padding: 6px 28px 6px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239ca3af' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color .15s;
+  min-width: 120px;
+}
+
+.filter-select:focus { border-color: var(--accent); background-color: var(--surface); }
+
+.filter-select-wrap:has(select:not([value=""])) .filter-select,
+.filter-select[data-active="true"] {
+  border-color: var(--accent);
+  background-color: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.filter-active-dot {
+  position: absolute;
+  top: 18px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: 1.5px solid var(--surface);
+}
+
+.filter-clear-btn {
+  padding: 6px 12px;
+  background: var(--red-light);
+  color: var(--red);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .15s;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+.filter-clear-btn:hover { opacity: .8; }
+
+.filter-results {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-left: 2px;
+}
+
+.filter-results strong { color: var(--text); }
+.filter-results-hint  { color: var(--accent); }

@@ -8,6 +8,7 @@ import EmployeeCard            from '@/components/EmployeeCard'
 import EmployeeProfilePanel    from '@/components/EmployeeProfilePanel'
 import AddEmployeeModal        from '@/components/AddEmployeeModal'
 import ManageOptionsModal      from '@/components/ManageOptionsModal'
+import EmployeeFilterBar       from '@/components/EmployeeFilterBar'
 
 export default function EmployeesPage() {
   const { summary, schedules, updateSchedule } = useAttendanceData()
@@ -20,16 +21,15 @@ export default function EmployeesPage() {
   } = useEmployeeProfiles(summary?.employees ?? [])
 
   const [selected,      setSelected]      = useState(null)
-  const [search,        setSearch]        = useState('')
   const [showAdd,       setShowAdd]       = useState(false)
   const [showOptions,   setShowOptions]   = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
-  // Filters
-  const [filterDesig,  setFilterDesig]  = useState('')
-  const [filterDept,   setFilterDept]   = useState('')
-  const [filterShift,  setFilterShift]  = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
+  const [search,        setSearch]        = useState('')
+  const [filterDesig,   setFilterDesig]   = useState('')
+  const [filterDept,    setFilterDept]    = useState('')
+  const [filterShift,   setFilterShift]   = useState('')
+  const [filterStatus,  setFilterStatus]  = useState('')
 
   const summaryEmployees = summary?.employees ?? []
 
@@ -47,39 +47,36 @@ export default function EmployeesPage() {
 
   const filtered = allEmployees.filter(e => {
     const p = e.profile
-    if (!p) return true
-    if (search        && !e.name.toLowerCase().includes(search.toLowerCase()) && !e.userId.includes(search)) return false
-    if (filterDesig   && p.designation      !== filterDesig)   return false
-    if (filterDept    && p.department       !== filterDept)    return false
-    if (filterShift   && p.shift            !== filterShift)   return false
-    if (filterStatus  && p.employmentStatus !== filterStatus)  return false
+    if (search       && !e.name.toLowerCase().includes(search.toLowerCase()) && !e.userId.includes(search)) return false
+    if (filterDesig  && p?.designation      !== filterDesig)  return false
+    if (filterDept   && p?.department       !== filterDept)   return false
+    if (filterShift  && p?.shift            !== filterShift)  return false
+    if (filterStatus && p?.employmentStatus !== filterStatus) return false
     return true
   })
 
-  const hasFilters = search || filterDesig || filterDept || filterShift || filterStatus
+  const hasFilters = !!(search || filterDesig || filterDept || filterShift || filterStatus)
 
   function clearFilters() {
-    setSearch(''); setFilterDesig(''); setFilterDept(''); setFilterShift(''); setFilterStatus('')
+    setSearch(''); setFilterDesig(''); setFilterDept('')
+    setFilterShift(''); setFilterStatus('')
   }
 
-  // When profile is updated, also sync shift to schedule
+  const SHIFT_TIMES = {
+    '9 AM – 6 PM':  { login: '09:00', logout: '18:00' },
+    '10 AM – 7 PM': { login: '10:00', logout: '19:00' },
+    '12 PM – 8 PM': { login: '12:00', logout: '20:00' },
+    '2 PM – 10 PM': { login: '14:00', logout: '22:00' },
+    '5 PM – 10 PM': { login: '17:00', logout: '22:00' },
+  }
+
   function handleUpdateProfile(userId, data) {
     updateProfile(userId, data)
     if (data.shift !== undefined) {
-      const cur = schedules?.[userId] ?? {}
-      const preset = (options.shifts ?? []).find(s => s === data.shift)
-      // find matching preset times from constants
-      const SHIFT_TIMES = {
-        '9 AM – 6 PM':   { login: '09:00', logout: '18:00' },
-        '10 AM – 7 PM':  { login: '10:00', logout: '19:00' },
-        '12 PM – 8 PM':  { login: '12:00', logout: '20:00' },
-        '2 PM – 10 PM':  { login: '14:00', logout: '22:00' },
-        '5 PM – 10 PM':  { login: '17:00', logout: '22:00' },
-      }
       const times = SHIFT_TIMES[data.shift]
       if (times) {
         updateSchedule(userId, {
-          ...cur,
+          ...(schedules?.[userId] ?? {}),
           userId,
           name: profiles[userId]?.name ?? userId,
           scheduledLoginTime:  times.login,
@@ -93,11 +90,6 @@ export default function EmployeesPage() {
   const selectedProfile = selected ? profiles[selected] : null
   const selectedStats   = selected ? summaryEmployees.find(e => e.userId === selected) ?? null : null
 
-  // Count per filter option for badges
-  function countBy(field, value) {
-    return allEmployees.filter(e => e.profile?.[field] === value).length
-  }
-
   return (
     <div className="app-shell">
       <Sidebar active="employees" summary={summary} />
@@ -105,100 +97,29 @@ export default function EmployeesPage() {
         <div className="topbar">
           <div className="topbar-left">
             <div className="topbar-title">Employees</div>
-            <div className="topbar-sub">{filtered.length} of {allEmployees.length} employees</div>
+            <div className="topbar-sub">{allEmployees.length} total employees</div>
           </div>
           <div className="topbar-right">
-            <div className="search-wrap">
-              <span className="search-icon">⌕</span>
-              <input className="input search-input" placeholder="Search name or ID…" value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
             <button className="btn btn-secondary" onClick={() => setShowOptions(true)}>⚙ Manage Options</button>
             <button className="btn btn-primary"   onClick={() => setShowAdd(true)}>+ Add Employee</button>
           </div>
         </div>
 
         <div className="page-body">
+          <EmployeeFilterBar
+            options={options}
+            profiles={profiles}
+            search={search}           setSearch={setSearch}
+            filterStatus={filterStatus} setFilterStatus={setFilterStatus}
+            filterDept={filterDept}   setFilterDept={setFilterDept}
+            filterShift={filterShift} setFilterShift={setFilterShift}
+            filterDesig={filterDesig} setFilterDesig={setFilterDesig}
+            onClear={clearFilters}
+            hasFilters={hasFilters}
+            total={allEmployees.length}
+            filtered={filtered.length}
+          />
 
-          {/* Filter bar */}
-          <div className="emp-filter-bar">
-            <div className="emp-filter-group">
-              <span className="emp-filter-label">Status</span>
-              <div className="emp-filter-pills">
-                {['Permanent','Probation'].map(s => (
-                  <button
-                    key={s}
-                    className={'emp-filter-pill' + (filterStatus === s ? ' active' : '')}
-                    onClick={() => setFilterStatus(v => v === s ? '' : s)}
-                  >
-                    {s}
-                    <span className="emp-filter-count">{countBy('employmentStatus', s)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {(options.departments ?? []).length > 0 && (
-              <div className="emp-filter-group">
-                <span className="emp-filter-label">Department</span>
-                <div className="emp-filter-pills">
-                  {(options.departments ?? []).map(d => (
-                    <button
-                      key={d}
-                      className={'emp-filter-pill' + (filterDept === d ? ' active' : '')}
-                      onClick={() => setFilterDept(v => v === d ? '' : d)}
-                    >
-                      {d}
-                      <span className="emp-filter-count">{countBy('department', d)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(options.shifts ?? []).length > 0 && (
-              <div className="emp-filter-group">
-                <span className="emp-filter-label">Shift</span>
-                <div className="emp-filter-pills">
-                  {(options.shifts ?? []).map(s => (
-                    <button
-                      key={s}
-                      className={'emp-filter-pill' + (filterShift === s ? ' active' : '')}
-                      onClick={() => setFilterShift(v => v === s ? '' : s)}
-                    >
-                      {s}
-                      <span className="emp-filter-count">{countBy('shift', s)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(options.designations ?? []).length > 0 && (
-              <div className="emp-filter-group">
-                <span className="emp-filter-label">Designation</span>
-                <div className="emp-filter-pills">
-                  {(options.designations ?? []).map(d => (
-                    <button
-                      key={d}
-                      className={'emp-filter-pill' + (filterDesig === d ? ' active' : '')}
-                      onClick={() => setFilterDesig(v => v === d ? '' : d)}
-                    >
-                      {d}
-                      <span className="emp-filter-count">{countBy('designation', d)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {hasFilters && (
-              <button className="btn btn-danger" style={{ alignSelf: 'flex-start' }} onClick={clearFilters}>
-                ✕ Clear filters
-              </button>
-            )}
-          </div>
-
-          {/* Employee cards */}
           <div className="emp-card-grid">
             {filtered.map(emp => (
               <EmployeeCard
@@ -235,20 +156,11 @@ export default function EmployeesPage() {
       )}
 
       {showAdd && (
-        <AddEmployeeModal
-          options={options}
-          onAdd={addEmployee}
-          onClose={() => setShowAdd(false)}
-        />
+        <AddEmployeeModal options={options} onAdd={addEmployee} onClose={() => setShowAdd(false)} />
       )}
 
       {showOptions && (
-        <ManageOptionsModal
-          options={options}
-          onAdd={addOption}
-          onRemove={removeOption}
-          onClose={() => setShowOptions(false)}
-        />
+        <ManageOptionsModal options={options} onAdd={addOption} onRemove={removeOption} onClose={() => setShowOptions(false)} />
       )}
 
       {confirmDelete && (
@@ -256,7 +168,7 @@ export default function EmployeesPage() {
           <div className="payroll-modal" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 10 }}>Delete Employee?</div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-              This will permanently remove <strong>{profiles[confirmDelete]?.name ?? confirmDelete}</strong> and all their data.
+              Permanently remove <strong>{profiles[confirmDelete]?.name ?? confirmDelete}</strong> and all their data.
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmDelete(null)}>Cancel</button>
