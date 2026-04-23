@@ -37,17 +37,6 @@ export function useEmployeeProfiles() {
   const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    // 1. Load from localStorage immediately (instant)
-    const local = loadProfiles()
-    const normalised = {}
-    for (const [k, v] of Object.entries(local)) {
-      const id = String(k)
-      normalised[id] = { ...v, userId: id }
-    }
-    if (Object.keys(normalised).length > 0) {
-      setProfiles(normalised)
-    }
-
     setPhotos(loadPhotos())
     const opts = loadDropdownOptions()
     setOptions({
@@ -56,17 +45,25 @@ export function useEmployeeProfiles() {
       shifts:       opts.shifts       ?? DEFAULT_SHIFTS,
     })
 
-    // 2. Then fetch fresh from Sheets (async)
+    // Always fetch from Sheets — Sheets is the master
     fetchAllFromSheets()
       .then(sheetsData => {
         const fromSheets = parseEmployeesFromSheets(sheetsData)
-        if (Object.keys(fromSheets).length > 0) {
-          // Sheets is the master — update localStorage cache
-          saveProfiles(fromSheets)
-          setProfiles(fromSheets)
-        }
+        // Replace localStorage with Sheets data
+        saveProfiles(fromSheets)
+        setProfiles(fromSheets)
+        console.log('Loaded', Object.keys(fromSheets).length, 'employees from Sheets')
       })
-      .catch(e => console.warn('Could not fetch from Sheets:', e.message))
+      .catch(e => {
+        console.warn('Could not fetch from Sheets — falling back to localStorage:', e.message)
+        const local = loadProfiles()
+        const normalised = {}
+        for (const [k, v] of Object.entries(local)) {
+          const id = String(k)
+          normalised[id] = { ...v, userId: id }
+        }
+        setProfiles(normalised)
+      })
   }, [])
 
   // Push to Sheets immediately on every change
