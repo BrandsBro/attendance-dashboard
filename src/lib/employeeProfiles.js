@@ -70,3 +70,10 @@ export function calcRemainingCasual(profile) {
   const accrued = calcAccruedLeave(profile.joinDate)
   return Math.max(0, Math.round((accrued - (profile.casualUsed ?? 0)) * 10) / 10)
 }
+
+export function deleteProfile(userId) {
+  if (!isBrowser()) return
+  const p = loadProfiles()
+  delete p[userId]
+  saveProfiles(p)
+}
