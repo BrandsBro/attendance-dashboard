@@ -17,8 +17,14 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const url    = searchParams.get('url')
   const action = searchParams.get('action') || 'ping'
-  const res    = await fetch(`${url}?action=${action}`)
-  const text   = await res.text()
+  const sheet  = searchParams.get('sheet')  || ''
+
+  const scriptUrl = sheet
+    ? `${url}?action=${action}&sheet=${encodeURIComponent(sheet)}`
+    : `${url}?action=${action}`
+
+  const res  = await fetch(scriptUrl)
+  const text = await res.text()
   let json
   try { json = JSON.parse(text) } catch { json = { error: text } }
   return NextResponse.json(json)
