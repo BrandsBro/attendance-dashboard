@@ -251,3 +251,14 @@ export function buildPayrollSummaryRows(employees, getSettingsFn, recordsByUserI
     }
   })
 }
+
+// Individual sync exports for backward compatibility
+export async function syncEmployees(profiles)        { return syncAll({ employees: profiles }) }
+export async function syncAttendanceRecords(records) { return syncAll({ attendanceRecords: records }) }
+export async function syncAttendanceSummary(summary) { return syncAll({ attendanceSummary: summary }) }
+export async function syncLeaveRecords(records)      { return syncAll({ leaveRecords: records }) }
+export async function syncPayrollSettings(settings)  { return syncAll({ payrollSettings: settings }) }
+export async function syncPayrollSummary(rows)       { return syncAll({ payrollSummary: rows }) }
+export async function syncShiftOverrides(overrides)  { return syncAll({ shiftOverrides: overrides }) }
+export async function syncHolidays(holidays)         { return syncAll({ holidays }) }
+export async function syncSchedules(schedules)       { return syncAll({ schedules }) }
