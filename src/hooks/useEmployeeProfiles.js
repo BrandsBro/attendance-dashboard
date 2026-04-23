@@ -48,14 +48,8 @@ export function useEmployeeProfiles(summaryEmployees = []) {
       const id = String(emp.userId)
       if (!merged[id]) {
         merged[id] = makeDefault({ ...emp, userId: id })
-      } else {
-        // Keep saved profile but update attendance-derived fields
-        merged[id] = {
-          ...merged[id],
-          userId: id,
-          name: merged[id].name || emp.name,
-        }
       }
+      // Never overwrite existing saved profile data
     }
 
     setProfiles(merged)
