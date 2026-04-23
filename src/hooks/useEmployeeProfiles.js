@@ -72,9 +72,11 @@ export function useEmployeeProfiles() {
   // Push to Sheets immediately on every change
   async function pushToSheets(updatedProfiles) {
     try {
-      await syncEmployees(updatedProfiles)
+      console.log('🔄 Pushing to Sheets:', Object.keys(updatedProfiles).length, 'employees')
+      const result = await syncEmployees(updatedProfiles)
+      console.log('✅ Push result:', result)
     } catch(e) {
-      console.warn('Sheets push failed:', e.message)
+      console.error('❌ Sheets push failed:', e.message)
     }
   }
 
