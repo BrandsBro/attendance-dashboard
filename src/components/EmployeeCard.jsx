@@ -26,7 +26,7 @@ export default function EmployeeCard({ profile, stats, photo, onClick, onDelete 
           <div className="emp-card-name">{profile.name}</div>
           <div className="emp-card-id">{profile.userId}</div>
           {profile.designation && <div className="emp-card-desig">{profile.designation}</div>}
-          {profile.employmentType && <div className="emp-card-type">{profile.employmentType}</div>}
+          {profile.employmentStatus && <div className="emp-card-type">{profile.employmentStatus}</div>}
         </div>
       </div>
 
