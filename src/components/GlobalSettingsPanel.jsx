@@ -13,6 +13,7 @@ function fmt12(t) {
 }
 
 export default function GlobalSettingsPanel({ employees = [] }) {
+  const [open,       setOpen]       = useState(false)
   const [settings,   setSettings]   = useState(() => loadDashSettings())
   const [selected,   setSelected]   = useState(new Set())
   const [loginTime,  setLoginTime]  = useState('09:00')
@@ -48,13 +49,16 @@ export default function GlobalSettingsPanel({ employees = [] }) {
 
   return (
     <div className="card">
-      <div className="card-header">
+      <div className="card-header" style={{ cursor: 'pointer' }} onClick={() => setOpen(p => !p)}>
         <span className="card-title">⚙ Schedule Settings</span>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
-          Global: <strong>{fmt12(global.loginTime ?? '09:00')}</strong> → <strong>{fmt12(global.logoutTime ?? '18:00')}</strong> · Grace: <strong>{global.gracePeriod ?? 0}m</strong> · OT: <strong>{global.otAfterHours ?? 8}h</strong>
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
+            <strong>{fmt12(global.loginTime ?? '09:00')}</strong> → <strong>{fmt12(global.logoutTime ?? '18:00')}</strong> · Grace: <strong>{global.gracePeriod ?? 0}m</strong> · OT: <strong>{global.otAfterHours ?? 8}h</strong>
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{open ? '▲' : '▼'}</span>
+        </div>
       </div>
-      <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {open && <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Settings form row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
@@ -131,7 +135,7 @@ export default function GlobalSettingsPanel({ employees = [] }) {
           </div>
         </div>
 
-      </div>
+      </div>}
     </div>
   )
 }
