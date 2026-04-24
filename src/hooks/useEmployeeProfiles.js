@@ -22,7 +22,7 @@ export const DEFAULT_DEPARTMENTS = [
 export const DEFAULT_SHIFTS = [
   '9 AM - 6 PM','10 AM - 7 PM','12 PM - 8 PM','2 PM - 10 PM','5 PM - 10 PM',
 ]
-export const EMPLOYMENT_STATUSES = ['Permanent','Probation']
+export const EMPLOYMENT_STATUSES = ['Permanent','Probation','Ex-Employee']
 export const GENDERS              = ['Male','Female','Other','Prefer not to say']
 export const BLOOD_GROUPS         = ['A+','A-','B+','B-','AB+','AB-','O+','O-']
 
