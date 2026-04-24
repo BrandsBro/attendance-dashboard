@@ -42,9 +42,8 @@ export async function syncAll(payload) {
   if (employees && Object.keys(employees).length > 0) {
     const rows = Object.values(employees).map(p => ({
       'User ID':            String(p.userId            || ''),
-      'First Name':         String(p.firstName         || (p.name||'').split(' ')[0] || ''),
-      'Last Name':          String(p.lastName          || (p.name||'').split(' ').slice(1).join(' ') || ''),
-      'Name':               String(p.name              || ''),
+      'First Name':         String(p.firstName || (p.name||'').split(' ')[0] || ''),
+      'Last Name':          String(p.lastName  || (p.name||'').split(' ').slice(1).join(' ') || ''),
       'Designation':        String(p.designation       || ''),
       'Department':         String(p.department        || ''),
       'Employment Status':  String(p.employmentStatus  || ''),
