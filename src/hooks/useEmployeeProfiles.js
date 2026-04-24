@@ -86,7 +86,9 @@ export function useEmployeeProfiles() {
       const id   = String(data.userId)
       const profile = {
         userId:           id,
-        name:             data.name             || '',
+        firstName:        data.firstName        || '',
+          lastName:         data.lastName         || '',
+          name:             data.name || ((data.firstName||'') + ' ' + (data.lastName||'')).trim() || '',
         department:       data.department       || '',
         designation:      data.designation      || '',
         employmentStatus: data.employmentStatus || 'Permanent',
