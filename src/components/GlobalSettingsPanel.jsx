@@ -21,6 +21,10 @@ export default function GlobalSettingsPanel({ employees = [], onClose }) {
   const [grace,      setGrace]      = useState(0)
   const [otAfter,    setOtAfter]    = useState(30)
   const [applied,    setApplied]    = useState(false)
+  const [applyLogin,  setApplyLogin]  = useState(true)
+  const [applyLogout, setApplyLogout] = useState(true)
+  const [applyGrace,  setApplyGrace]  = useState(true)
+  const [applyOT,     setApplyOT]     = useState(true)
 
   const global = settings._global ?? {}
 
@@ -37,10 +41,23 @@ export default function GlobalSettingsPanel({ employees = [], onClose }) {
   function apply(ids) {
     const next = { ...settings }
     for (const userId of ids) {
-      next[userId] = { ...(next[userId] ?? {}), loginTime, logoutTime, gracePeriod: grace, otBufferMins: otAfter }
+      const cur = next[userId] ?? {}
+      next[userId] = {
+        ...cur,
+        ...(applyLogin  ? { loginTime }              : {}),
+        ...(applyLogout ? { logoutTime }             : {}),
+        ...(applyGrace  ? { gracePeriod: grace }     : {}),
+        ...(applyOT     ? { otBufferMins: otAfter }  : {}),
+      }
     }
-    // Also update global
-    next._global = { ...global, loginTime, logoutTime, gracePeriod: grace, otBufferMins: otAfter }
+    const g = next._global ?? {}
+    next._global = {
+      ...g,
+      ...(applyLogin  ? { loginTime }              : {}),
+      ...(applyLogout ? { logoutTime }             : {}),
+      ...(applyGrace  ? { gracePeriod: grace }     : {}),
+      ...(applyOT     ? { otBufferMins: otAfter }  : {}),
+    }
     saveDashSettings(next)
     setSettings(next)
     setApplied(true)
@@ -78,6 +95,23 @@ export default function GlobalSettingsPanel({ employees = [], onClose }) {
             OT Buffer (min)
             <input type="number" className="input" min={0} step={1} value={otAfter === 8 ? 30 : otAfter} onChange={e => setOtAfter(+e.target.value)} />
           </label>
+        </div>
+
+        {/* Field selection */}
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', padding: '10px 14px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', alignSelf: 'center' }}>Apply:</span>
+          {[
+            { label: 'Login Time',    state: applyLogin,  set: setApplyLogin  },
+            { label: 'Logout Time',   state: applyLogout, set: setApplyLogout },
+            { label: 'Grace Period',  state: applyGrace,  set: setApplyGrace  },
+            { label: 'OT Buffer',     state: applyOT,     set: setApplyOT     },
+          ].map(f => (
+            <label key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
+              <input type="checkbox" checked={f.state} onChange={e => f.set(e.target.checked)}
+                style={{ width: 14, height: 14, accentColor: 'var(--accent)', cursor: 'pointer' }} />
+              {f.label}
+            </label>
+          ))}
         </div>
 
         {/* Action buttons */}
