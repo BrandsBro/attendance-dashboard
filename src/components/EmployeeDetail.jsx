@@ -16,6 +16,12 @@ export function saveDashSettings(s) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s))
 }
 
+function fmt12(t) {
+  if (!t) return '—'
+  const [h, m] = t.split(':').map(Number)
+  return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`
+}
+
 function EditableTime({ value, date, onSave }) {
   const [editing, setEditing] = useState(false)
 
@@ -50,103 +56,69 @@ function EditableTime({ value, date, onSave }) {
   )
 }
 
-function fmt12(t) {
-  if (!t) return '—'
-  const [h, m] = t.split(':').map(Number)
-  const ampm = h >= 12 ? 'PM' : 'AM'
-  return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`
-}
+function EditableField({ label, value, type = 'text', step, min, onChange }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal]         = useState(value)
 
-// Individual settings panel — shown inside slide
-function IndividualSettings({ empId, empName, settings, onChange }) {
-  const global   = settings._global ?? {}
-  const emp      = settings[empId]  ?? {}
+  useEffect(() => setVal(value), [value])
 
-  function setEmp(field, val) {
-    const next = { ...settings, [empId]: { ...emp, [field]: val } }
-    saveDashSettings(next)
-    onChange(next)
+  function commit() {
+    onChange(type === 'number' ? +val : val)
+    setEditing(false)
   }
 
-  function clearEmp(field) {
-    const updated = { ...emp }
-    delete updated[field]
-    const next = { ...settings, [empId]: updated }
-    saveDashSettings(next)
-    onChange(next)
+  if (editing) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <input
+          type={type} step={step} min={min}
+          className="inline-time-input"
+          style={{ width: type === 'time' ? 100 : 70 }}
+          value={val}
+          autoFocus
+          onChange={e => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => e.key === 'Enter' && commit()}
+        />
+      </div>
+    )
   }
 
   return (
-    <div style={{ background: '#eef2ff', borderRadius: 8, padding: 14, border: '1px solid #c7d2fe', margin: '0 0 12px 0' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#3730a3', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>
-        {empName} — Individual Settings
-      </div>
-      <div className="profile-form">
-        <label className="form-label">
-          Login Time
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="time" className="input"
-              value={emp.loginTime ?? global.loginTime ?? '09:00'}
-              onChange={e => setEmp('loginTime', e.target.value)} />
-            {emp.loginTime && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('loginTime')}>Reset</button>}
-          </div>
-        </label>
-        <label className="form-label">
-          Logout Time
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="time" className="input"
-              value={emp.logoutTime ?? global.logoutTime ?? '18:00'}
-              onChange={e => setEmp('logoutTime', e.target.value)} />
-            {emp.logoutTime && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('logoutTime')}>Reset</button>}
-          </div>
-        </label>
-        <label className="form-label">
-          Grace Period (min)
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="number" className="input" min={0}
-              value={emp.gracePeriod ?? global.gracePeriod ?? 0}
-              onChange={e => setEmp('gracePeriod', +e.target.value)} />
-            {emp.gracePeriod !== undefined && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('gracePeriod')}>Reset</button>}
-          </div>
-        </label>
-        <label className="form-label">
-          OT After (hours)
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="number" className="input" min={0} step={0.5}
-              value={emp.otAfterHours ?? global.otAfterHours ?? 8}
-              onChange={e => setEmp('otAfterHours', +e.target.value)} />
-            {emp.otAfterHours !== undefined && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('otAfterHours')}>Reset</button>}
-          </div>
-        </label>
-      </div>
-    </div>
+    <span className="editable-time" onClick={() => setEditing(true)} title="Click to edit">
+      {type === 'time' ? fmt12(value) : value}
+      <span className="edit-pencil">✎</span>
+    </span>
   )
 }
 
 export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverride, onClose }) {
   const schedule = schedules?.[emp.userId]
-  const [settings,     setSettings]     = useState(() => loadDashSettings())
-  const [showEmpSetts, setShowEmpSetts] = useState(false)
+  const [settings, setSettings] = useState(() => loadDashSettings())
 
-  const global   = settings._global ?? {}
+  const global   = settings._global  ?? {}
   const empSetts = settings[emp.userId] ?? {}
 
-  const loginTime   = empSetts.loginTime   ?? global.loginTime   ?? schedule?.scheduledLoginTime  ?? '09:00'
-  const logoutTime  = empSetts.logoutTime  ?? global.logoutTime  ?? schedule?.scheduledLogoutTime ?? '18:00'
-  const gracePeriod = empSetts.gracePeriod ?? global.gracePeriod ?? schedule?.gracePeriodMinutes  ?? 0
+  const loginTime   = empSetts.loginTime    ?? global.loginTime    ?? schedule?.scheduledLoginTime  ?? '09:00'
+  const logoutTime  = empSetts.logoutTime   ?? global.logoutTime   ?? schedule?.scheduledLogoutTime ?? '18:00'
+  const gracePeriod = empSetts.gracePeriod  ?? global.gracePeriod  ?? schedule?.gracePeriodMinutes  ?? 0
   const otAfter     = empSetts.otAfterHours ?? global.otAfterHours ?? 8
+
+  function setEmp(field, val) {
+    const next = { ...settings, [emp.userId]: { ...empSetts, [field]: val } }
+    saveDashSettings(next)
+    setSettings(next)
+  }
 
   function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in')  }
   function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out') }
 
-  // Calculate OT for a day based on settings
   function calcDayOT(d) {
-    if (!d.outTime || !d.inTime) return 0
-    const inMs  = new Date(d.inTime).getTime()
-    const outMs = new Date(d.outTime).getTime()
+    if (!d.outTime) return 0
+    const outMs    = new Date(d.outTime).getTime()
     const [lh, lm] = logoutTime.split(':').map(Number)
     const logoutMs = new Date(d.date + 'T00:00:00').setHours(lh, lm, 0, 0)
-    const otMs = outMs - logoutMs
+    const otMs     = outMs - logoutMs
     return otMs > 0 ? Math.round(otMs / 60000) : 0
   }
 
@@ -154,44 +126,47 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
     <>
       <div className="detail-backdrop" onClick={onClose} />
       <div className="detail-panel">
+
+        {/* Header */}
         <div className="detail-header">
-          <div>
+          <div style={{ flex: 1 }}>
             <div className="detail-name">{emp.name}</div>
             <div className="detail-dept">
               {emp.department}
               {emp.shift && <span className="shift-badge">{emp.shift}</span>}
-              {gracePeriod > 0 && <span className="grace-badge">{gracePeriod}m grace</span>}
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace', flexWrap: 'wrap' }}>
-              <span>In: <strong style={{ color: '#059669' }}>{fmt12(loginTime)}</strong></span>
-              <span>Out: <strong style={{ color: '#dc2626' }}>{fmt12(logoutTime)}</strong></span>
-              <span>Grace: <strong style={{ color: 'var(--text)' }}>{gracePeriod}m</strong></span>
-              <span>OT after: <strong style={{ color: '#7c3aed' }}>{otAfter}h</strong></span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              className={'btn btn-secondary' + (showEmpSetts ? ' active' : '')}
-              style={{ padding: '5px 10px', fontSize: 12 }}
-              onClick={() => setShowEmpSetts(p => !p)}>
-              ⚙ Settings
-            </button>
-            <button className="btn-icon" onClick={onClose}>✕</button>
+          <button className="btn-icon" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Editable schedule settings inline */}
+        <div style={{ padding: '12px 20px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', minWidth: 60 }}>Schedule</div>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>Login</span>
+              <EditableField label="Login" value={loginTime} type="time"
+                onChange={v => setEmp('loginTime', v)} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>Logout</span>
+              <EditableField label="Logout" value={logoutTime} type="time"
+                onChange={v => setEmp('logoutTime', v)} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>Grace (min)</span>
+              <EditableField label="Grace" value={gracePeriod} type="number" min={0}
+                onChange={v => setEmp('gracePeriod', v)} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>OT after (hrs)</span>
+              <EditableField label="OT" value={otAfter} type="number" min={0} step={0.5}
+                onChange={v => setEmp('otAfterHours', v)} />
+            </div>
           </div>
         </div>
 
-        <div style={{ padding: '0 20px' }}>
-          {/* Individual settings — toggleable */}
-          {showEmpSetts && (
-            <IndividualSettings
-              empId={emp.userId}
-              empName={emp.name}
-              settings={settings}
-              onChange={setSettings}
-            />
-          )}
-        </div>
-
+        {/* Stats pills */}
         <div className="detail-pills">
           <div className="detail-pill">
             <div className="pill-val">{emp.workingDays}</div>
@@ -215,6 +190,7 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
           </div>
         </div>
 
+        {/* Table */}
         <div className="detail-body">
           <table className="data-table">
             <thead>
@@ -230,8 +206,8 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
             </thead>
             <tbody>
               {emp.days.map(d => {
-                const isOff  = d.isWeekend || d.isHoliday
-                const dayOT  = calcDayOT(d)
+                const isOff = d.isWeekend || d.isHoliday
+                const dayOT = calcDayOT(d)
                 return (
                   <tr key={d.date} className={isOff ? 'row-off' : ''}>
                     <td>
@@ -240,10 +216,14 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
                       {d.isWeekend && <span className="day-badge day-weekend">Weekend</span>}
                       {(d.manualIn || d.manualOut) && <span className="day-badge day-edited">Edited</span>}
                     </td>
-                    <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {isOff ? '—' : <span style={{ color: '#059669' }}>{fmt12(loginTime)}</span>}
-                      {!isOff && <span style={{ color: 'var(--text-subtle)' }}> → </span>}
-                      {!isOff && <span style={{ color: '#dc2626' }}>{fmt12(logoutTime)}</span>}
+                    <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, whiteSpace: 'nowrap' }}>
+                      {isOff ? '—' : (
+                        <span>
+                          <span style={{ color: '#059669' }}>{fmt12(loginTime)}</span>
+                          <span style={{ color: 'var(--text-subtle)' }}> → </span>
+                          <span style={{ color: '#dc2626' }}>{fmt12(logoutTime)}</span>
+                        </span>
+                      )}
                     </td>
                     <td>
                       {isOff ? <span style={{ color: 'var(--text-subtle)' }}>—</span>
