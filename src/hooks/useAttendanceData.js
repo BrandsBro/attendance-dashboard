@@ -1,4 +1,5 @@
 'use client'
+import { loadDashSettings } from '@/components/EmployeeDetail'
 
 import { useState, useCallback, useEffect } from 'react'
 import { parseFile, parseCsv }              from '@/lib/parseAttendance'
@@ -69,7 +70,20 @@ export function useAttendanceData() {
     try {
       const records = await parseFile(file)
       const initSc  = buildDefaultSchedules(records)
-      const merged  = { ...initSc, ...schedules }
+      // Merge dashboard_settings_v1 into schedules
+      const dashSetts = loadDashSettings()
+      const mergedDash = {}
+      for (const [userId, s] of Object.entries(dashSetts)) {
+        if (userId === '_global' || userId.includes('_rows')) continue
+        const global = dashSetts._global ?? {}
+        mergedDash[userId] = {
+          ...(schedules[userId] ?? {}),
+          scheduledLoginTime:  s.loginTime   ?? global.loginTime   ?? '09:00',
+          scheduledLogoutTime: s.logoutTime  ?? global.logoutTime  ?? '18:00',
+          gracePeriodMinutes:  s.gracePeriod ?? global.gracePeriod ?? 0,
+        }
+      }
+      const merged  = { ...initSc, ...schedules, ...mergedDash }
       const s       = calculateStats(records, merged, 'upload', file.name, holidays, timeEdits)
       setSummary(s); setRawRecords(records); setSchedules(merged)
       persist(s, merged, holidays, timeEdits, records)
@@ -84,7 +98,19 @@ export function useAttendanceData() {
       const csv     = await fetchSheetCsv(url)
       const records = parseCsv(csv)
       const initSc  = buildDefaultSchedules(records)
-      const merged  = { ...initSc, ...schedules }
+      const dashSetts2 = loadDashSettings()
+      const mergedDash2 = {}
+      for (const [userId, s] of Object.entries(dashSetts2)) {
+        if (userId === '_global' || userId.includes('_rows')) continue
+        const global2 = dashSetts2._global ?? {}
+        mergedDash2[userId] = {
+          ...(schedules[userId] ?? {}),
+          scheduledLoginTime:  s.loginTime   ?? global2.loginTime   ?? '09:00',
+          scheduledLogoutTime: s.logoutTime  ?? global2.logoutTime  ?? '18:00',
+          gracePeriodMinutes:  s.gracePeriod ?? global2.gracePeriod ?? 0,
+        }
+      }
+      const merged  = { ...initSc, ...schedules, ...mergedDash2 }
       const s       = calculateStats(records, merged, 'sheets', url, holidays, timeEdits)
       setSummary(s); setRawRecords(records); setSchedules(merged)
       persist(s, merged, holidays, timeEdits, records)
