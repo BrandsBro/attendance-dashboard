@@ -51,9 +51,9 @@ export function parseEmployeesFromSheets(sheetsData) {
     if (!userId) continue
     profiles[userId] = {
       userId,
-      firstName:        String(row['First Name']        || ''),
-      lastName:         String(row['Last Name']         || ''),
-      name:             String(row['Name'] || ((row['First Name']||'') + ' ' + (row['Last Name']||'')).trim() || ''),
+      firstName:        String(row['First Name'] || ''),
+      lastName:         String(row['Last Name']  || ''),
+      name:             ((row['First Name']||'') + ' ' + (row['Last Name']||'')).trim() || String(row['Name'] || ''),
       designation:      String(row['Designation']       || ''),
       department:       String(row['Department']        || ''),
       employmentStatus: String(row['Employment Status'] || 'Permanent'),

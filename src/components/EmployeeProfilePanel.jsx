@@ -100,10 +100,7 @@ export default function EmployeeProfilePanel({
               <section>
                 <div className="form-section-title">Basic Information</div>
                 <div className="profile-form">
-                  <label className="form-label">
-                    Full Name
-                    <input className="input" value={form.name} onChange={e => set('name', e.target.value)} />
-                  </label>
+
                   <label className="form-label">
                     Employee ID
                     <input className="input" value={form.userId} onChange={e => set('userId', e.target.value)} />
