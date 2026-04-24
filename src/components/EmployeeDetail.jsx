@@ -233,6 +233,12 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
                       {isOff ? <span style={{ color: 'var(--text-subtle)' }}>—</span>
                              : <EditableTime value={d.outTime} date={d.date} onSave={iso => saveOut(d.date, iso)} />}
                     </td>
+                    <td>
+                      {isOff ? '—' : (
+                        <EditableNum value={rowGrace} suffix="m"
+                          onSave={v => saveRowOverride(d.date, 'gracePeriod', v)} />
+                      )}
+                    </td>
                     <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}>{fmtMinutes(d.presenceMinutes)}</td>
                     <td>
                       {isOff ? '—' : d.lateMinutes > 0
