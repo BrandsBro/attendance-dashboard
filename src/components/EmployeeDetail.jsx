@@ -103,8 +103,9 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
 
   function calcDayOT(d, rowLogout) {
     if (rowOverrides[d.date]?.otMinutes !== undefined) return rowOverrides[d.date].otMinutes
-    if (!d.outTime) return 0
-    const outMs    = new Date(d.outTime).getTime()
+    const outVal = d.outTime
+    if (!outVal) return 0
+    const outMs    = new Date(outVal).getTime()
     const [lh, lm] = rowLogout.split(':').map(Number)
     const logoutMs = new Date(d.date + 'T00:00:00').setHours(lh, lm, 0, 0)
     const diffMin  = Math.round((outMs - logoutMs) / 60000)
@@ -187,8 +188,11 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
                 const rowLogin  = rowOverrides[d.date]?.loginTime   ?? defLogin
                 const rowLogout = rowOverrides[d.date]?.logoutTime  ?? defLogout
                 const rowGrace  = rowOverrides[d.date]?.gracePeriod ?? defGrace
-                const dayOT     = calcDayOT(d, rowLogout)
-                const dayLate   = calcDayLate(d, rowLogin, rowGrace)
+                // Use edited times if available for live recalc
+                const effectiveOut = d.outTime
+                const effectiveIn  = d.inTime
+                const dayOT     = calcDayOT({ ...d, outTime: effectiveOut }, rowLogout)
+                const dayLate   = calcDayLate({ ...d, inTime: effectiveIn }, rowLogin, rowGrace)
                 return (
                   <tr key={d.date} className={isOff ? 'row-off' : ''}>
                     <td>
