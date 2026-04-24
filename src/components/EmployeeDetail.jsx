@@ -107,7 +107,11 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
     const outMs    = new Date(d.outTime).getTime()
     const [lh, lm] = rowLogout.split(':').map(Number)
     const logoutMs = new Date(d.date + 'T00:00:00').setHours(lh, lm, 0, 0)
-    return Math.max(0, Math.round((outMs - logoutMs) / 60000))
+    const diffMin  = Math.round((outMs - logoutMs) / 60000)
+    const buffer   = empSetts.otBufferMins ?? global.otBufferMins ?? 30
+    if (diffMin < buffer) return 0
+    if (diffMin >= 60)    return diffMin
+    return diffMin - buffer
   }
 
   function calcDayLate(d, rowLogin, rowGrace) {
