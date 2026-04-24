@@ -3,16 +3,15 @@
 import { useState, useEffect } from 'react'
 import { fmtMinutes, fmt12h } from '@/lib/calculateStats'
 
-// localStorage helpers
 const SETTINGS_KEY = 'dashboard_settings_v1'
 
-function loadSettings() {
+export function loadDashSettings() {
   if (typeof window === 'undefined') return {}
   try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') }
   catch { return {} }
 }
 
-function saveSettings(s) {
+export function saveDashSettings(s) {
   if (typeof window === 'undefined') return
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s))
 }
@@ -51,121 +50,74 @@ function EditableTime({ value, date, onSave }) {
   )
 }
 
-function SettingsPanel({ empId, empName, onClose }) {
-  const [settings, setSettings] = useState(() => loadSettings())
+function fmt12(t) {
+  if (!t) return '—'
+  const [h, m] = t.split(':').map(Number)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`
+}
 
-  const global = settings._global ?? {}
-  const emp    = settings[empId]   ?? {}
-
-  function setGlobal(field, val) {
-    const next = { ...settings, _global: { ...global, [field]: val } }
-    saveSettings(next)
-    setSettings(next)
-  }
+// Individual settings panel — shown inside slide
+function IndividualSettings({ empId, empName, settings, onChange }) {
+  const global   = settings._global ?? {}
+  const emp      = settings[empId]  ?? {}
 
   function setEmp(field, val) {
     const next = { ...settings, [empId]: { ...emp, [field]: val } }
-    saveSettings(next)
-    setSettings(next)
+    saveDashSettings(next)
+    onChange(next)
   }
 
   function clearEmp(field) {
     const updated = { ...emp }
     delete updated[field]
     const next = { ...settings, [empId]: updated }
-    saveSettings(next)
-    setSettings(next)
+    saveDashSettings(next)
+    onChange(next)
   }
 
   return (
-    <div className="payroll-modal-backdrop" onClick={onClose}>
-      <div className="payroll-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 600 }}>Schedule Settings</div>
-          <button className="btn-icon" onClick={onClose}>✕</button>
-        </div>
-
-        {/* Global settings */}
-        <div style={{ background: 'var(--bg)', borderRadius: 8, padding: 14, border: '1px solid var(--border)', marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>
-            Global Defaults — applies to all employees
+    <div style={{ background: '#eef2ff', borderRadius: 8, padding: 14, border: '1px solid #c7d2fe', margin: '0 0 12px 0' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#3730a3', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>
+        {empName} — Individual Settings
+      </div>
+      <div className="profile-form">
+        <label className="form-label">
+          Login Time
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="time" className="input"
+              value={emp.loginTime ?? global.loginTime ?? '09:00'}
+              onChange={e => setEmp('loginTime', e.target.value)} />
+            {emp.loginTime && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('loginTime')}>Reset</button>}
           </div>
-          <div className="profile-form">
-            <label className="form-label">
-              Login Time
-              <input type="time" className="input"
-                value={global.loginTime ?? '09:00'}
-                onChange={e => setGlobal('loginTime', e.target.value)} />
-            </label>
-            <label className="form-label">
-              Logout Time
-              <input type="time" className="input"
-                value={global.logoutTime ?? '18:00'}
-                onChange={e => setGlobal('logoutTime', e.target.value)} />
-            </label>
-            <label className="form-label">
-              Grace Period (min)
-              <input type="number" className="input" min={0}
-                value={global.gracePeriod ?? 0}
-                onChange={e => setGlobal('gracePeriod', +e.target.value)} />
-            </label>
-            <label className="form-label">
-              OT After (hours)
-              <input type="number" className="input" min={0} step={0.5}
-                value={global.otAfterHours ?? 8}
-                onChange={e => setGlobal('otAfterHours', +e.target.value)} />
-            </label>
+        </label>
+        <label className="form-label">
+          Logout Time
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="time" className="input"
+              value={emp.logoutTime ?? global.logoutTime ?? '18:00'}
+              onChange={e => setEmp('logoutTime', e.target.value)} />
+            {emp.logoutTime && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('logoutTime')}>Reset</button>}
           </div>
-        </div>
-
-        {/* Per-employee override */}
-        <div style={{ background: '#eef2ff', borderRadius: 8, padding: 14, border: '1px solid #c7d2fe' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#3730a3', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>
-            {empName} — Individual Override
+        </label>
+        <label className="form-label">
+          Grace Period (min)
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="number" className="input" min={0}
+              value={emp.gracePeriod ?? global.gracePeriod ?? 0}
+              onChange={e => setEmp('gracePeriod', +e.target.value)} />
+            {emp.gracePeriod !== undefined && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('gracePeriod')}>Reset</button>}
           </div>
-          <div className="profile-form">
-            <label className="form-label">
-              Login Time
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input type="time" className="input"
-                  value={emp.loginTime ?? global.loginTime ?? '09:00'}
-                  onChange={e => setEmp('loginTime', e.target.value)} />
-                {emp.loginTime && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('loginTime')}>Reset</button>}
-              </div>
-            </label>
-            <label className="form-label">
-              Logout Time
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input type="time" className="input"
-                  value={emp.logoutTime ?? global.logoutTime ?? '18:00'}
-                  onChange={e => setEmp('logoutTime', e.target.value)} />
-                {emp.logoutTime && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('logoutTime')}>Reset</button>}
-              </div>
-            </label>
-            <label className="form-label">
-              Grace Period (min)
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input type="number" className="input" min={0}
-                  value={emp.gracePeriod ?? global.gracePeriod ?? 0}
-                  onChange={e => setEmp('gracePeriod', +e.target.value)} />
-                {emp.gracePeriod !== undefined && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('gracePeriod')}>Reset</button>}
-              </div>
-            </label>
-            <label className="form-label">
-              OT After (hours)
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input type="number" className="input" min={0} step={0.5}
-                  value={emp.otAfterHours ?? global.otAfterHours ?? 8}
-                  onChange={e => setEmp('otAfterHours', +e.target.value)} />
-                {emp.otAfterHours !== undefined && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('otAfterHours')}>Reset</button>}
-              </div>
-            </label>
+        </label>
+        <label className="form-label">
+          OT After (hours)
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input type="number" className="input" min={0} step={0.5}
+              value={emp.otAfterHours ?? global.otAfterHours ?? 8}
+              onChange={e => setEmp('otAfterHours', +e.target.value)} />
+            {emp.otAfterHours !== undefined && <button className="btn-link" style={{ fontSize: 11 }} onClick={() => clearEmp('otAfterHours')}>Reset</button>}
           </div>
-        </div>
-
-        <button className="btn btn-primary" style={{ width: '100%', marginTop: 16 }} onClick={onClose}>
-          Done
-        </button>
+        </label>
       </div>
     </div>
   )
@@ -173,11 +125,8 @@ function SettingsPanel({ empId, empName, onClose }) {
 
 export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverride, onClose }) {
   const schedule = schedules?.[emp.userId]
-  const [showSettings, setShowSettings] = useState(false)
-  const [settings, setSettings]         = useState(() => loadSettings())
-
-  // Refresh settings when panel opens
-  useEffect(() => { setSettings(loadSettings()) }, [showSettings])
+  const [settings,     setSettings]     = useState(() => loadDashSettings())
+  const [showEmpSetts, setShowEmpSetts] = useState(false)
 
   const global   = settings._global ?? {}
   const empSetts = settings[emp.userId] ?? {}
@@ -190,12 +139,15 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
   function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in')  }
   function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out') }
 
-  function fmt(t) {
-    if (!t) return '—'
-    const [h, m] = t.split(':').map(Number)
-    const ampm = h >= 12 ? 'PM' : 'AM'
-    const hh   = h % 12 || 12
-    return `${hh}:${String(m).padStart(2,'0')} ${ampm}`
+  // Calculate OT for a day based on settings
+  function calcDayOT(d) {
+    if (!d.outTime || !d.inTime) return 0
+    const inMs  = new Date(d.inTime).getTime()
+    const outMs = new Date(d.outTime).getTime()
+    const [lh, lm] = logoutTime.split(':').map(Number)
+    const logoutMs = new Date(d.date + 'T00:00:00').setHours(lh, lm, 0, 0)
+    const otMs = outMs - logoutMs
+    return otMs > 0 ? Math.round(otMs / 60000) : 0
   }
 
   return (
@@ -210,20 +162,34 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
               {emp.shift && <span className="shift-badge">{emp.shift}</span>}
               {gracePeriod > 0 && <span className="grace-badge">{gracePeriod}m grace</span>}
             </div>
-            {/* Schedule info row */}
-            <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
-              <span>🕐 In: <strong style={{ color: 'var(--text)' }}>{fmt(loginTime)}</strong></span>
-              <span>🕕 Out: <strong style={{ color: 'var(--text)' }}>{fmt(logoutTime)}</strong></span>
-              <span>⏱ OT after: <strong style={{ color: 'var(--text)' }}>{otAfter}h</strong></span>
+            <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace', flexWrap: 'wrap' }}>
+              <span>In: <strong style={{ color: '#059669' }}>{fmt12(loginTime)}</strong></span>
+              <span>Out: <strong style={{ color: '#dc2626' }}>{fmt12(logoutTime)}</strong></span>
+              <span>Grace: <strong style={{ color: 'var(--text)' }}>{gracePeriod}m</strong></span>
+              <span>OT after: <strong style={{ color: '#7c3aed' }}>{otAfter}h</strong></span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12 }}
-              onClick={() => setShowSettings(true)}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              className={'btn btn-secondary' + (showEmpSetts ? ' active' : '')}
+              style={{ padding: '5px 10px', fontSize: 12 }}
+              onClick={() => setShowEmpSetts(p => !p)}>
               ⚙ Settings
             </button>
             <button className="btn-icon" onClick={onClose}>✕</button>
           </div>
+        </div>
+
+        <div style={{ padding: '0 20px' }}>
+          {/* Individual settings — toggleable */}
+          {showEmpSetts && (
+            <IndividualSettings
+              empId={emp.userId}
+              empName={emp.name}
+              settings={settings}
+              onChange={setSettings}
+            />
+          )}
         </div>
 
         <div className="detail-pills">
@@ -254,6 +220,7 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Shift</th>
                 <th>In <span className="th-hint">click to edit</span></th>
                 <th>Out <span className="th-hint">click to edit</span></th>
                 <th>Presence</th>
@@ -263,7 +230,8 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
             </thead>
             <tbody>
               {emp.days.map(d => {
-                const isOff = d.isWeekend || d.isHoliday
+                const isOff  = d.isWeekend || d.isHoliday
+                const dayOT  = calcDayOT(d)
                 return (
                   <tr key={d.date} className={isOff ? 'row-off' : ''}>
                     <td>
@@ -271,6 +239,11 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
                       {d.isHoliday && <span className="day-badge day-holiday">Holiday</span>}
                       {d.isWeekend && <span className="day-badge day-weekend">Weekend</span>}
                       {(d.manualIn || d.manualOut) && <span className="day-badge day-edited">Edited</span>}
+                    </td>
+                    <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {isOff ? '—' : <span style={{ color: '#059669' }}>{fmt12(loginTime)}</span>}
+                      {!isOff && <span style={{ color: 'var(--text-subtle)' }}> → </span>}
+                      {!isOff && <span style={{ color: '#dc2626' }}>{fmt12(logoutTime)}</span>}
                     </td>
                     <td>
                       {isOff ? <span style={{ color: 'var(--text-subtle)' }}>—</span>
@@ -284,11 +257,11 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
                     <td>
                       {isOff ? '—' : d.lateMinutes > 0
                         ? <span className="badge badge-amber">{fmtMinutes(d.lateMinutes)}</span>
-                        : <span className="on-time">✓ On time</span>}
+                        : <span className="on-time">✓</span>}
                     </td>
                     <td>
-                      {isOff ? '—' : d.overtimeMinutes > 0
-                        ? <span className="badge badge-blue">{fmtMinutes(d.overtimeMinutes)}</span>
+                      {isOff ? '—' : dayOT > 0
+                        ? <span className="badge badge-violet">{fmtMinutes(dayOT)}</span>
                         : <span style={{ color: 'var(--text-subtle)' }}>—</span>}
                     </td>
                   </tr>
@@ -298,14 +271,6 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
           </table>
         </div>
       </div>
-
-      {showSettings && (
-        <SettingsPanel
-          empId={emp.userId}
-          empName={emp.name}
-          onClose={() => { setShowSettings(false); setSettings(loadSettings()) }}
-        />
-      )}
     </>
   )
 }

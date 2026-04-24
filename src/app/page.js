@@ -7,11 +7,15 @@ import MetricsBar            from '@/components/MetricsBar'
 import SummaryTable          from '@/components/SummaryTable'
 import EmployeeDetail        from '@/components/EmployeeDetail'
 import SyncButton            from '@/components/SyncButton'
+import GlobalSettingsPanel   from '@/components/GlobalSettingsPanel'
+import GlobalSettingsPanel   from '@/components/GlobalSettingsPanel'
 
 export default function Dashboard() {
   const { summary, schedules, updateSchedule, updateLogoutOverride } = useAttendanceData()
   const [selectedEmployee, setSelectedEmployee] = useState(null)
   const [selectedIds,      setSelectedIds]      = useState(new Set())
+  const [showGlobalSetts,  setShowGlobalSetts]  = useState(false)
+  const [showGlobalSetts,  setShowGlobalSetts]  = useState(false)
 
   const liveEmployee = selectedEmployee
     ? summary?.employees.find(e => e.userId === selectedEmployee.userId) ?? selectedEmployee
@@ -35,6 +39,7 @@ export default function Dashboard() {
             {summary && <div className="topbar-sub">{summary.dateRange.from} → {summary.dateRange.to} · {summary.employees.length} employees</div>}
           </div>
           <div className="topbar-right">
+            <button className="btn btn-secondary" onClick={() => setShowGlobalSetts(true)}>⚙ Global Settings</button>
             <SyncButton />
             {!summary && <a href="/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>Upload Data</a>}
             {summary && <a href="/upload" className="btn btn-secondary" style={{ textDecoration: 'none' }}>↑ New Upload</a>}
@@ -64,6 +69,8 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+      {showGlobalSetts && <GlobalSettingsPanel onClose={() => setShowGlobalSetts(false)} />}
+      {showGlobalSetts && <GlobalSettingsPanel onClose={() => setShowGlobalSetts(false)} />}
       {liveEmployee && (
         <EmployeeDetail
           employee={liveEmployee}
