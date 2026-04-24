@@ -12,11 +12,19 @@ import { DEFAULT_LOGIN_TIME, DEFAULT_LOGOUT_TIME, DEFAULT_GRACE_MINUTES }   from
 export function useAttendanceData() {
   const [summary,     setSummary]     = useState(null)
   const [schedules,   setSchedules]   = useState({})
+  const [settingsVer,  setSettingsVer]  = useState(0)
   const [holidays,    setHolidays]    = useState([])
   const [rawRecords,  setRawRecords]  = useState(null)
   const [timeEdits,   setTimeEdits]   = useState({}) // { userId: { date: { in, out } } }
   const [status,      setStatus]      = useState('idle')
   const [errorMsg,    setErrorMsg]    = useState('')
+
+  // Listen for dashboard settings changes
+  useEffect(() => {
+    function onSettingsChange() { setSettingsVer(v => v + 1) }
+    window.addEventListener('dashSettingsChanged', onSettingsChange)
+    return () => window.removeEventListener('dashSettingsChanged', onSettingsChange)
+  }, [])
 
   useEffect(() => {
     const cached = loadCache()
@@ -89,7 +97,7 @@ export function useAttendanceData() {
       persist(s, merged, holidays, timeEdits, records)
       setStatus('done')
     } catch (e) { setErrorMsg(String(e)); setStatus('error') }
-  }, [schedules, holidays, timeEdits])
+  }, [schedules, holidays, timeEdits, settingsVer])
 
   const processSheetUrl = useCallback(async (url) => {
     if (!isValidSheetsUrl(url)) { setErrorMsg('Invalid Google Sheets URL.'); setStatus('error'); return }
@@ -116,7 +124,7 @@ export function useAttendanceData() {
       persist(s, merged, holidays, timeEdits, records)
       setStatus('done')
     } catch (e) { setErrorMsg(String(e)); setStatus('error') }
-  }, [schedules, holidays, timeEdits])
+  }, [schedules, holidays, timeEdits, settingsVer])
 
   const updateSchedule = useCallback((userId, schedule) => {
     setSchedules(prev => {

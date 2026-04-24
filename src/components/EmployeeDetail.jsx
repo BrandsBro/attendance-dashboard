@@ -14,6 +14,7 @@ export function loadDashSettings() {
 export function saveDashSettings(s) {
   if (typeof window === 'undefined') return
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s))
+  window.dispatchEvent(new CustomEvent('dashSettingsChanged'))
 }
 
 function fmt12(t) {
