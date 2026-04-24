@@ -54,7 +54,8 @@ export default function Dashboard() {
           ) : (
             <>
               <MetricsBar summary={summary} />
-<SummaryTable
+              <GlobalSettingsPanel employees={summary.employees} />
+              <SummaryTable
                 summary={summary}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
