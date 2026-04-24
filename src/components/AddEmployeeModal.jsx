@@ -5,7 +5,7 @@ import { EMPLOYMENT_STATUSES, GENDERS } from '@/hooks/useEmployeeProfiles'
 
 export default function AddEmployeeModal({ options, onAdd, onClose }) {
   const [form, setForm] = useState({
-    userId: '', name: '', designation: '',
+    userId: '', firstName: '', lastName: '', designation: '',
     department: '', employmentStatus: 'Permanent',
     shift: '', joinDate: '', phone: '', email: '',
   })
@@ -14,7 +14,7 @@ export default function AddEmployeeModal({ options, onAdd, onClose }) {
   function set(field, val) { setForm(p => ({ ...p, [field]: val })) }
 
   function handleAdd() {
-    if (!form.name.trim())   { setError('Name is required');        return }
+    if (!form.firstName.trim()) { setError('First name is required'); return }
     if (!form.userId.trim()) { setError('Employee ID is required'); return }
     onAdd(form)
     onClose()
@@ -32,8 +32,12 @@ export default function AddEmployeeModal({ options, onAdd, onClose }) {
 
         <div className="profile-form">
           <label className="form-label">
-            Full Name *
-            <input className="input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. John Doe" />
+            First Name *
+            <input className="input" value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="e.g. John" />
+          </label>
+          <label className="form-label">
+            Last Name
+            <input className="input" value={form.lastName} onChange={e => set('lastName', e.target.value)} placeholder="e.g. Doe" />
           </label>
           <label className="form-label">
             Employee ID *
