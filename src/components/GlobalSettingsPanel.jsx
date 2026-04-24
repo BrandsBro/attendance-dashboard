@@ -12,7 +12,7 @@ function fmt12(t) {
   return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`
 }
 
-export default function GlobalSettingsPanel({ employees = [] }) {
+export default function GlobalSettingsPanel({ employees = [], onClose }) {
   const [open,       setOpen]       = useState(false)
   const [settings,   setSettings]   = useState(() => loadDashSettings())
   const [selected,   setSelected]   = useState(new Set())
