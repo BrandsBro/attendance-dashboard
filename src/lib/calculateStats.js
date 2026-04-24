@@ -84,7 +84,14 @@ export function calculateStats(records, schedules, source, sourceLabel, holidays
       let overtimeMinutes = 0
       if (!isWeekend && !isHoliday && outTime && logoutMin !== null) {
         const minsAfter = toMinutes(outTime) - logoutMin
-        if (minsAfter > OVERTIME_BUFFER_MINUTES) { overtimeMinutes = minsAfter; overtimeDays++ }
+        // OT rule: <30min=0, 30-59min=OT-30, >=60min=full OT
+        if (minsAfter >= 60) {
+          overtimeMinutes = minsAfter
+          overtimeDays++
+        } else if (minsAfter >= OVERTIME_BUFFER_MINUTES) {
+          overtimeMinutes = minsAfter - OVERTIME_BUFFER_MINUTES
+          overtimeDays++
+        }
       }
 
       days.push({
