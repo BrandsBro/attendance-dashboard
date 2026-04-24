@@ -19,7 +19,7 @@ export default function GlobalSettingsPanel({ employees = [], onClose }) {
   const [loginTime,  setLoginTime]  = useState('09:00')
   const [logoutTime, setLogoutTime] = useState('18:00')
   const [grace,      setGrace]      = useState(0)
-  const [otAfter,    setOtAfter]    = useState(8)
+  const [otAfter,    setOtAfter]    = useState(30)
   const [applied,    setApplied]    = useState(false)
 
   const global = settings._global ?? {}
@@ -37,10 +37,10 @@ export default function GlobalSettingsPanel({ employees = [], onClose }) {
   function apply(ids) {
     const next = { ...settings }
     for (const userId of ids) {
-      next[userId] = { ...(next[userId] ?? {}), loginTime, logoutTime, gracePeriod: grace, otAfterHours: otAfter }
+      next[userId] = { ...(next[userId] ?? {}), loginTime, logoutTime, gracePeriod: grace, otBufferMins: otAfter }
     }
     // Also update global
-    next._global = { ...global, loginTime, logoutTime, gracePeriod: grace, otAfterHours: otAfter }
+    next._global = { ...global, loginTime, logoutTime, gracePeriod: grace, otBufferMins: otAfter }
     saveDashSettings(next)
     setSettings(next)
     setApplied(true)
@@ -53,7 +53,7 @@ export default function GlobalSettingsPanel({ employees = [], onClose }) {
         <span className="card-title">⚙ Schedule Settings</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
-            <strong>{fmt12(global.loginTime ?? '09:00')}</strong> → <strong>{fmt12(global.logoutTime ?? '18:00')}</strong> · Grace: <strong>{global.gracePeriod ?? 0}m</strong> · OT: <strong>{global.otAfterHours ?? 8}h</strong>
+            <strong>{fmt12(global.loginTime ?? '09:00')}</strong> → <strong>{fmt12(global.logoutTime ?? '18:00')}</strong> · Grace: <strong>{global.gracePeriod ?? 0}m</strong> · OT: <strong>{global.otBufferMins ?? 30}m</strong>
           </span>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{open ? '▲' : '▼'}</span>
         </div>
@@ -75,8 +75,8 @@ export default function GlobalSettingsPanel({ employees = [], onClose }) {
             <input type="number" className="input" min={0} value={grace} onChange={e => setGrace(+e.target.value)} />
           </label>
           <label className="form-label">
-            OT After (hours)
-            <input type="number" className="input" min={0} step={0.5} value={otAfter} onChange={e => setOtAfter(+e.target.value)} />
+            OT Buffer (min)
+            <input type="number" className="input" min={0} step={1} value={otAfter === 8 ? 30 : otAfter} onChange={e => setOtAfter(+e.target.value)} />
           </label>
         </div>
 

@@ -149,6 +149,11 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
                 <EditableNum value={defGrace} suffix="m"
                   onSave={v => { const next = { ...settings, [emp.userId]: { ...empSetts, gracePeriod: v } }; saveDashSettings(next); setSettings(next) }} />
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 9, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '.06em' }}>OT Buffer (min)</span>
+                <EditableNum value={empSetts.otBufferMins ?? global.otBufferMins ?? 30} suffix="m"
+                  onSave={v => { const next = { ...settings, [emp.userId]: { ...empSetts, otBufferMins: v } }; saveDashSettings(next); setSettings(next) }} />
+              </div>
             </div>
           </div>
           <button className="btn-icon" onClick={onClose}>✕</button>
