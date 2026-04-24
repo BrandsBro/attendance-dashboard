@@ -92,6 +92,58 @@ function EditableField({ label, value, type = 'text', step, min, onChange }) {
   )
 }
 
+
+function EditableTimeStr({ value, fallback, onSave }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal]         = useState(value ?? fallback)
+
+  useEffect(() => setVal(value ?? fallback), [value, fallback])
+
+  function commit() { onSave(val); setEditing(false) }
+
+  if (editing) {
+    return (
+      <input type="time" className="inline-time-input" style={{ width: 95 }}
+        value={val} autoFocus
+        onChange={e => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => e.key === 'Enter' && commit()} />
+    )
+  }
+  return (
+    <span className="editable-time" onClick={() => setEditing(true)} title="Click to edit">
+      {fmt12(value ?? fallback)}
+      <span className="edit-pencil">✎</span>
+    </span>
+  )
+}
+
+function EditableNum({ value, min = 0, step = 1, suffix = '', onSave }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal]         = useState(value)
+
+  useEffect(() => setVal(value), [value])
+
+  function commit() { onSave(+val); setEditing(false) }
+
+  if (editing) {
+    return (
+      <input type="number" className="inline-time-input"
+        style={{ width: 60 }} min={min} step={step}
+        value={val} autoFocus
+        onChange={e => setVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => e.key === 'Enter' && commit()} />
+    )
+  }
+  return (
+    <span className="editable-time" onClick={() => setEditing(true)} title="Click to edit">
+      {value}{suffix}
+      <span className="edit-pencil">✎</span>
+    </span>
+  )
+}
+
 export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverride, onClose }) {
   const schedule = schedules?.[emp.userId]
   const [settings, setSettings] = useState(() => loadDashSettings())
