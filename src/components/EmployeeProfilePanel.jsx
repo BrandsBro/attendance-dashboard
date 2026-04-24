@@ -102,6 +102,24 @@ export default function EmployeeProfilePanel({
                 <div className="profile-form">
 
                   <label className="form-label">
+                    First Name
+                    <input className="input" value={form.firstName || ''}
+                      onChange={e => {
+                        const fn = e.target.value
+                        setForm(p => ({ ...p, firstName: fn, name: (fn + ' ' + (p.lastName||'')).trim() }))
+                        setDirty(true)
+                      }} />
+                  </label>
+                  <label className="form-label">
+                    Last Name
+                    <input className="input" value={form.lastName || ''}
+                      onChange={e => {
+                        const ln = e.target.value
+                        setForm(p => ({ ...p, lastName: ln, name: ((p.firstName||'') + ' ' + ln).trim() }))
+                        setDirty(true)
+                      }} />
+                  </label>
+                  <label className="form-label">
                     Employee ID
                     <input className="input" value={form.userId} onChange={e => set('userId', e.target.value)} />
                   </label>
