@@ -7,7 +7,6 @@ import MetricsBar            from '@/components/MetricsBar'
 import SummaryTable          from '@/components/SummaryTable'
 import EmployeeDetail        from '@/components/EmployeeDetail'
 import SyncButton            from '@/components/SyncButton'
-import GlobalSettingsPanel   from '@/components/GlobalSettingsPanel'
 
 export default function Dashboard() {
   const { summary, schedules, updateSchedule, updateLogoutOverride } = useAttendanceData()
@@ -56,8 +55,7 @@ export default function Dashboard() {
           ) : (
             <>
               <MetricsBar summary={summary} />
-              <GlobalSettingsPanel employees={summary.employees} />
-              <SummaryTable
+<SummaryTable
                 summary={summary}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
