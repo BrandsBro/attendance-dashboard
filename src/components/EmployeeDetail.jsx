@@ -129,8 +129,22 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
               {emp.department}
               {emp.shift && <span className="shift-badge">{emp.shift}</span>}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontFamily: 'DM Mono, monospace' }}>
-              Default: <strong>{fmt12(defLogin)}</strong> → <strong>{fmt12(defLogout)}</strong> · Grace: <strong>{defGrace}m</strong>
+            <div style={{ display: 'flex', gap: 16, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 9, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '.06em' }}>Default Login</span>
+                <EditableTimeStr value={empSetts.loginTime} fallback={defLogin}
+                  onSave={v => { const next = { ...settings, [emp.userId]: { ...empSetts, loginTime: v } }; saveDashSettings(next); setSettings(next) }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 9, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '.06em' }}>Default Logout</span>
+                <EditableTimeStr value={empSetts.logoutTime} fallback={defLogout}
+                  onSave={v => { const next = { ...settings, [emp.userId]: { ...empSetts, logoutTime: v } }; saveDashSettings(next); setSettings(next) }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 9, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '.06em' }}>Default Grace (min)</span>
+                <EditableNum value={defGrace} suffix="m"
+                  onSave={v => { const next = { ...settings, [emp.userId]: { ...empSetts, gracePeriod: v } }; saveDashSettings(next); setSettings(next) }} />
+              </div>
             </div>
           </div>
           <button className="btn-icon" onClick={onClose}>✕</button>

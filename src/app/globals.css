@@ -674,10 +674,11 @@ body {
 }
 
 .detail-panel {
+  max-width: 1100px !important;
   position: fixed;
   top: 0;
   right: 0;
-  width: 760px;
+  width: 1000px;
   height: 100vh;
   background: var(--surface);
   border-left: 1px solid var(--border);
