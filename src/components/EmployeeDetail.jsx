@@ -92,6 +92,15 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
   const defLogout = empSetts.logoutTime  ?? global.logoutTime  ?? schedule?.scheduledLogoutTime ?? '18:00'
   const defGrace  = empSetts.gracePeriod ?? global.gracePeriod ?? schedule?.gracePeriodMinutes  ?? 0
 
+  function resetRowOverride(date) {
+    const next = { ...rowOverrides }
+    delete next[date]
+    setRowOverrides(next)
+    const s = loadDashSettings()
+    const updated = { ...s, [emp.userId + '_rows']: next }
+    saveDashSettings(updated)
+  }
+
   function saveRowOverride(date, field, val) {
     const next = { ...rowOverrides, [date]: { ...(rowOverrides[date] ?? {}), [field]: val } }
     setRowOverrides(next)
@@ -297,6 +306,12 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
                       {d.isHoliday && <span className="day-badge day-holiday">Holiday</span>}
                       {d.isWeekend && <span className="day-badge day-weekend">Weekend</span>}
                       {(d.manualIn || d.manualOut) && <span className="day-badge day-edited">Edited</span>}
+                      {rowOverrides[d.date] && Object.keys(rowOverrides[d.date]).length > 0 && (
+                        <span className="day-badge" style={{ background: '#fee2e2', color: '#dc2626', cursor: 'pointer' }}
+                          onClick={() => resetRowOverride(d.date)} title="Reset row overrides">
+                          ↺ Reset
+                        </span>
+                      )}
                     </td>
                     <td style={{ fontSize: 11, fontFamily: 'DM Mono, monospace', whiteSpace: 'nowrap' }}>
                       {isOff ? '—' : (
