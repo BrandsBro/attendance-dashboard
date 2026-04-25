@@ -103,34 +103,62 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
   function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out') }
 
   function downloadCSV() {
-    const rows = [
-      ['Date','Scheduled In','Scheduled Out','Actual In','Actual Out','Grace (min)','Presence','Late (min)','OT (min)'],
-      ...emp.days.map(d => {
-        const isOff     = d.isWeekend || d.isHoliday
-        const rowLogin  = rowOverrides[d.date]?.loginTime   ?? defLogin
-        const rowLogout = rowOverrides[d.date]?.logoutTime  ?? defLogout
-        const rowGrace  = rowOverrides[d.date]?.gracePeriod ?? defGrace
-        const dayOT     = calcDayOT({ ...d }, rowLogout)
-        const dayLate   = calcDayLate({ ...d }, rowLogin, rowGrace)
-        return [
-          d.date,
-          isOff ? '' : fmt12(rowLogin),
-          isOff ? '' : fmt12(rowLogout),
-          d.inTime  ? fmt12h(d.inTime)  : '',
-          d.outTime ? fmt12h(d.outTime) : '',
-          isOff ? '' : rowGrace,
-          isOff ? '' : Math.round(d.presenceMinutes),
-          isOff ? '' : dayLate,
-          isOff ? '' : dayOT,
-        ]
-      })
+    // Section 1: Employee Info
+    const infoRows = [
+      ['=== EMPLOYEE INFORMATION ==='],
+      ['Name', emp.name],
+      ['User ID', emp.userId],
+      ['Department', emp.department ?? ''],
+      ['Shift', emp.shift ?? ''],
+      [''],
+      ['=== SUMMARY ==='],
+      ['Total Days Present', emp.workingDays],
+      ['Total Presence', fmtMinutes(emp.totalPresenceMinutes)],
+      ['Total Late Days', emp.lateDays ?? 0],
+      ['Total Late Time', fmtMinutes(emp.totalLateMinutes)],
+      ['Total Overtime', fmtMinutes(emp.totalOvertimeMinutes)],
+      [''],
+      ['=== SCHEDULE ==='],
+      ['Default Login', fmt12(defLogin)],
+      ['Default Logout', fmt12(defLogout)],
+      ['Grace Period', defGrace + ' min'],
+      ['OT Buffer', (empSetts.otBufferMins ?? global.otBufferMins ?? 30) + ' min'],
+      [''],
+      ['=== DAILY ATTENDANCE ==='],
+      ['Date','Day Type','Scheduled In','Scheduled Out','Actual In','Actual Out','Grace (min)','Presence (min)','Late (min)','OT (min)','Status'],
     ]
-    const csv  = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a')
-    a.href     = url
-    a.download = `${emp.name.replace(/ /g,'_')}_attendance.csv`
+
+    const dayRows = emp.days.map(d => {
+      const isOff     = d.isWeekend || d.isHoliday
+      const rowLogin  = rowOverrides[d.date]?.loginTime   ?? defLogin
+      const rowLogout = rowOverrides[d.date]?.logoutTime  ?? defLogout
+      const rowGrace  = rowOverrides[d.date]?.gracePeriod ?? defGrace
+      const dayOT     = isOff ? 0 : calcDayOT({ ...d }, rowLogout)
+      const dayLate   = isOff ? 0 : calcDayLate({ ...d }, rowLogin, rowGrace)
+      const dayType   = d.isHoliday ? 'Holiday' : d.isWeekend ? 'Weekend' : 'Working'
+      const status    = isOff ? dayType : (!d.inTime ? 'Absent' : dayLate > 0 ? 'Late' : 'On Time')
+      return [
+        d.date,
+        dayType,
+        isOff ? '' : fmt12(rowLogin),
+        isOff ? '' : fmt12(rowLogout),
+        d.inTime  ? fmt12h(d.inTime)  : '',
+        d.outTime ? fmt12h(d.outTime) : '',
+        isOff ? '' : rowGrace,
+        isOff ? '' : Math.round(d.presenceMinutes),
+        isOff ? '' : dayLate,
+        isOff ? '' : dayOT,
+        status,
+      ]
+    })
+
+    const allRows = [...infoRows, ...dayRows]
+    const csv     = allRows.map(r => r.map(v => `"${String(v ?? '')}"`).join(',')).join('\n')
+    const blob    = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url     = URL.createObjectURL(blob)
+    const a       = document.createElement('a')
+    a.href        = url
+    a.download    = `${emp.name.replace(/ /g,'_')}_${new Date().toISOString().slice(0,10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
