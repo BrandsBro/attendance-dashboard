@@ -26,6 +26,29 @@ export function useAttendanceData() {
     return () => window.removeEventListener('dashSettingsChanged', onSettingsChange)
   }, [])
 
+  // Recalculate when settings change
+  useEffect(() => {
+    if (settingsVer === 0) return // skip initial
+    const records = loadRawRecords()
+    if (!records || records.length === 0) return
+    const dashSetts = loadDashSettings()
+    const mergedDash = {}
+    for (const [userId, s] of Object.entries(dashSetts)) {
+      if (userId === '_global' || userId.includes('_rows')) continue
+      const g = dashSetts._global ?? {}
+      mergedDash[userId] = {
+        ...(schedules[userId] ?? {}),
+        scheduledLoginTime:  s.loginTime   ?? g.loginTime   ?? '09:00',
+        scheduledLogoutTime: s.logoutTime  ?? g.logoutTime  ?? '18:00',
+        gracePeriodMinutes:  s.gracePeriod ?? g.gracePeriod ?? 0,
+      }
+    }
+    const merged = { ...schedules, ...mergedDash }
+    const s = calculateStats(records, merged, summary?.source ?? 'upload', summary?.sourceLabel ?? '', holidays, timeEdits)
+    setSummary(s)
+    setSchedules(merged)
+  }, [settingsVer])
+
   useEffect(() => {
     const cached = loadCache()
     if (cached) {
