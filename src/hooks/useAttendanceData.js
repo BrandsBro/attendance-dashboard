@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { parseFile, parseCsv }              from '@/lib/parseAttendance'
 import { calculateStats }                   from '@/lib/calculateStats'
 import { fetchSheetCsv, isValidSheetsUrl }  from '@/lib/googleSheets'
-import { syncSchedules, syncHolidays, syncAttendanceSummary } from '@/lib/googleSheetSync'
+import { syncSchedules, syncHolidays, syncAttendanceSummary, syncAll } from '@/lib/googleSheetSync'
 import { loadCache, saveCache, clearCache, saveRawRecords, loadRawRecords } from '@/lib/storage'
 import { DEFAULT_LOGIN_TIME, DEFAULT_LOGOUT_TIME, DEFAULT_GRACE_MINUTES }   from '@/lib/constants'
 
@@ -119,6 +119,13 @@ export function useAttendanceData() {
       setSummary(s); setRawRecords(records); setSchedules(merged)
       persist(s, merged, holidays, timeEdits, records)
       setStatus('done')
+      // Auto sync to Google Sheets
+      try {
+        await syncAll({
+          attendanceSummary: s,
+          schedules: merged,
+        })
+      } catch(e) { console.warn('Auto-sync after upload failed:', e.message) }
     } catch (e) { setErrorMsg(String(e)); setStatus('error') }
   }, [schedules, holidays, timeEdits, settingsVer])
 
