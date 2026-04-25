@@ -325,7 +325,7 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
                         : <span className="on-time">✓</span>}
                     </td>
                     <td>
-                      {isOff ? '—' : <EditableNum value={dayOT} suffix="m" min={0} onSave={v => saveRowOverride(d.date, 'otMinutes', v)} />}
+                      {isOff ? '—' : dayOT > 0 ? <span className="badge badge-violet" style={{cursor:'pointer'}} title="Click to edit" onClick={() => { const v = prompt('Edit OT minutes:', dayOT); if (v !== null) saveRowOverride(d.date, 'otMinutes', +v) }}>{fmtMinutes(dayOT)}</span> : <span style={{color:'var(--text-subtle)'}}>—</span>}
                     </td>
                   </tr>
                 )
