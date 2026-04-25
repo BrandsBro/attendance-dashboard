@@ -12,7 +12,7 @@ function fmt12(t) {
   return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`
 }
 
-export default function GlobalSettingsPanel({ employees = [], onClose }) {
+export default function GlobalSettingsPanel({ employees = [], onClose, onRecalculate }) {
   const [open,       setOpen]       = useState(false)
   const [settings,   setSettings]   = useState(() => loadDashSettings())
   const [selected,   setSelected]   = useState(new Set())
@@ -115,12 +115,19 @@ export default function GlobalSettingsPanel({ employees = [], onClose }) {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="btn btn-primary" disabled={selected.size === 0} onClick={() => apply(selected)}>
             {applied ? '✓ Applied!' : `Apply to ${selected.size} selected`}
           </button>
           <button className="btn btn-secondary" onClick={() => apply(new Set(employees.map(e => e.userId)))}>
             Apply to ALL ({employees.length})
+          </button>
+          <button className="btn btn-secondary" style={{ marginLeft: 'auto' }}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('dashSettingsChanged'))
+              onRecalculate?.()
+            }}>
+            ↻ Recalculate Stats
           </button>
         </div>
 

@@ -55,7 +55,7 @@ export default function Dashboard() {
           ) : (
             <>
               <MetricsBar summary={summary} />
-              <GlobalSettingsPanel employees={summary.employees} />
+              <GlobalSettingsPanel employees={summary.employees} onRecalculate={() => { window.dispatchEvent(new CustomEvent('dashSettingsChanged')); setRecalcTick(t => t + 1) }} />
               <SummaryTable
                 summary={summary}
                 selectedIds={selectedIds}
