@@ -13,6 +13,7 @@ export default function Dashboard() {
   const { summary, schedules, updateSchedule, updateLogoutOverride } = useAttendanceData()
   const [selectedEmployee, setSelectedEmployee] = useState(null)
   const [selectedIds,      setSelectedIds]      = useState(new Set())
+  const [recalcTick,       setRecalcTick]       = useState(0)
 
   const liveEmployee = selectedEmployee
     ? summary?.employees.find(e => e.userId === selectedEmployee.userId) ?? selectedEmployee
@@ -72,6 +73,7 @@ export default function Dashboard() {
           schedules={schedules}
           onLogoutOverride={updateLogoutOverride}
           onClose={() => setSelectedEmployee(null)}
+          onRecalculate={() => { window.dispatchEvent(new CustomEvent('dashSettingsChanged')); setRecalcTick(t => t + 1) }}
         />
       )}
     </div>

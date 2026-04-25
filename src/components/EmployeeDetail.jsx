@@ -77,7 +77,7 @@ function EditableNum({ value, min = 0, step = 1, suffix = '', onSave }) {
   )
 }
 
-export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverride, onClose }) {
+export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverride, onClose, onRecalculate }) {
   const schedule = schedules?.[emp.userId]
   const [settings, setSettings] = useState(() => loadDashSettings())
   const [rowOverrides, setRowOverrides] = useState(() => {
@@ -158,7 +158,14 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
               </div>
             </div>
           </div>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary" style={{ fontSize: 12, padding: '5px 12px' }}
+              onClick={() => { saveDashSettings(loadDashSettings()); onRecalculate?.() }}
+              title="Recalculate all stats with current settings">
+              ↻ Recalculate
+            </button>
+            <button className="btn-icon" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         <div className="detail-pills">
