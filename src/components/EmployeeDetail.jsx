@@ -103,6 +103,29 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
   function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out') }
 
   function downloadCSV() {
+    // Single employee totals only
+    const rows = [
+      ['Employee','User ID','Department','Shift','Days Present','Total Presence','Late Days','Total Late Time','Total Overtime'],
+      [
+        emp.name,
+        emp.userId,
+        emp.department ?? '',
+        emp.shift ?? '',
+        emp.workingDays,
+        fmtMinutes(emp.totalPresenceMinutes),
+        emp.lateDays ?? 0,
+        fmtMinutes(emp.totalLateMinutes),
+        fmtMinutes(emp.totalOvertimeMinutes),
+      ]
+    ]
+    const csv  = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+    const a    = document.createElement('a')
+    a.href     = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = `${emp.name.replace(/ /g,'_')}_summary.csv`
+    a.click()
+    return
+  }
+  function downloadCSVFull() {
     // Section 1: Employee Info
     const infoRows = [
       ['=== EMPLOYEE INFORMATION ==='],

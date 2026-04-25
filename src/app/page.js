@@ -39,14 +39,20 @@ export default function Dashboard() {
           <div className="topbar-right">
             <button className="btn btn-secondary" onClick={() => {
               const emps = summary?.employees ?? []
-              const rows = [['Employee','Date','Actual In','Actual Out','Presence (min)','Late (min)','OT (min)']]
-              emps.forEach(e => e.days.forEach(d => rows.push([e.name, d.date, d.inTime ? new Date(d.inTime).toLocaleTimeString() : '', d.outTime ? new Date(d.outTime).toLocaleTimeString() : '', d.presenceMinutes, d.lateMinutes, d.overtimeMinutes])))
-              const csv = rows.map(r => r.map(v => String(v)).join(',')).join('\n')
+              const rows = [
+                ['Employee','User ID','Department','Shift','Days Present','Presence (min)','Late Days','Late (min)','Overtime (min)'],
+                ...emps.map(e => [
+                  e.name, e.userId, e.department ?? '', e.shift ?? '',
+                  e.workingDays, e.totalPresenceMinutes,
+                  e.lateDays ?? 0, e.totalLateMinutes, e.totalOvertimeMinutes
+                ])
+              ]
+              const csv = rows.map(r => r.join(',')).join('\n')
               const a = document.createElement('a')
               a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}))
-              a.download = 'attendance.csv'
+              a.download = 'attendance_summary.csv'
               a.click()
-            }}>↓ Download</button>
+            }}>↓ Download All</button>
             {!summary && <a href="/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>Upload Data</a>}
             {summary && <a href="/upload" className="btn btn-secondary" style={{ textDecoration: 'none' }}>↑ New Upload</a>}
           </div>
