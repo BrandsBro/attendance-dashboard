@@ -37,7 +37,16 @@ export default function Dashboard() {
             {summary && <div className="topbar-sub">{summary.dateRange.from} → {summary.dateRange.to} · {summary.employees.length} employees</div>}
           </div>
           <div className="topbar-right">
-<SyncButton />
+            <button className="btn btn-secondary" onClick={() => {
+              const emps = summary?.employees ?? []
+              const rows = [['Employee','Date','Actual In','Actual Out','Presence (min)','Late (min)','OT (min)']]
+              emps.forEach(e => e.days.forEach(d => rows.push([e.name, d.date, d.inTime ? new Date(d.inTime).toLocaleTimeString() : '', d.outTime ? new Date(d.outTime).toLocaleTimeString() : '', d.presenceMinutes, d.lateMinutes, d.overtimeMinutes])))
+              const csv = rows.map(r => r.map(v => String(v)).join(',')).join('\n')
+              const a = document.createElement('a')
+              a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}))
+              a.download = 'attendance.csv'
+              a.click()
+            }}>↓ Download</button>
             {!summary && <a href="/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>Upload Data</a>}
             {summary && <a href="/upload" className="btn btn-secondary" style={{ textDecoration: 'none' }}>↑ New Upload</a>}
           </div>
