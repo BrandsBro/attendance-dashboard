@@ -37,6 +37,11 @@ export default function Dashboard() {
             {summary && <div className="topbar-sub">{summary.dateRange.from} → {summary.dateRange.to} · {summary.employees.length} employees</div>}
           </div>
           <div className="topbar-right">
+            <button className="btn btn-danger" onClick={() => {
+              if (!confirm('Clear all attendance data? This cannot be undone.')) return
+              localStorage.clear()
+              window.location.reload()
+            }}>✕ Clear Data</button>
             <button className="btn btn-secondary" onClick={() => {
               const emps = summary?.employees ?? []
               const rows = [
