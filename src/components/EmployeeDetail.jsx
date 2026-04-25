@@ -102,6 +102,39 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
   function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in')  }
   function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out') }
 
+  function downloadCSV() {
+    const rows = [
+      ['Date','Scheduled In','Scheduled Out','Actual In','Actual Out','Grace (min)','Presence','Late (min)','OT (min)'],
+      ...emp.days.map(d => {
+        const isOff     = d.isWeekend || d.isHoliday
+        const rowLogin  = rowOverrides[d.date]?.loginTime   ?? defLogin
+        const rowLogout = rowOverrides[d.date]?.logoutTime  ?? defLogout
+        const rowGrace  = rowOverrides[d.date]?.gracePeriod ?? defGrace
+        const dayOT     = calcDayOT({ ...d }, rowLogout)
+        const dayLate   = calcDayLate({ ...d }, rowLogin, rowGrace)
+        return [
+          d.date,
+          isOff ? '' : fmt12(rowLogin),
+          isOff ? '' : fmt12(rowLogout),
+          d.inTime  ? fmt12h(d.inTime)  : '',
+          d.outTime ? fmt12h(d.outTime) : '',
+          isOff ? '' : rowGrace,
+          isOff ? '' : Math.round(d.presenceMinutes),
+          isOff ? '' : dayLate,
+          isOff ? '' : dayOT,
+        ]
+      })
+    ]
+    const csv  = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `${emp.name.replace(/ /g,'_')}_attendance.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function calcDayOT(d, rowLogout) {
     if (rowOverrides[d.date]?.otMinutes !== undefined) return rowOverrides[d.date].otMinutes
     const outVal = d.outTime
@@ -159,6 +192,11 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary" style={{ fontSize: 12, padding: '5px 12px' }}
+              onClick={downloadCSV}
+              title="Download attendance data as CSV">
+              ↓ Download
+            </button>
             <button className="btn btn-secondary" style={{ fontSize: 12, padding: '5px 12px' }}
               onClick={() => { saveDashSettings(loadDashSettings()); onRecalculate?.() }}
               title="Recalculate all stats with current settings">
