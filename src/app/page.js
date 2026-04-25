@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useAttendanceData } from '@/hooks/useAttendanceData'
 import Sidebar               from '@/components/Sidebar'
 import MetricsBar            from '@/components/MetricsBar'
@@ -10,8 +10,9 @@ import SyncButton            from '@/components/SyncButton'
 import GlobalSettingsPanel   from '@/components/GlobalSettingsPanel'
 
 export default function Dashboard() {
-  const { summary, schedules, updateSchedule, updateLogoutOverride } = useAttendanceData()
+  const { summary, schedules, updateSchedule, updateLogoutOverride, processFile, status } = useAttendanceData()
   const [selectedEmployee, setSelectedEmployee] = useState(null)
+  const fileInputRef = useRef(null)
   const [selectedIds,      setSelectedIds]      = useState(new Set())
   const [recalcTick,       setRecalcTick]       = useState(0)
 
@@ -59,7 +60,9 @@ export default function Dashboard() {
               a.click()
             }}>↓ Download All</button>
             {!summary && <a href="/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>Upload Data</a>}
-            {summary && <a href="/upload" className="btn btn-secondary" style={{ textDecoration: 'none' }}>↑ New Upload</a>}
+            <input ref={fileInputRef} type="file" accept=".xls,.xlsx,.csv" style={{ display: 'none' }}
+              onChange={async e => { const f = e.target.files?.[0]; if (f) { await processFile(f); e.target.value = '' } }} />
+            <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>↑ Upload</button>
           </div>
         </div>
         <div className="page-body">
