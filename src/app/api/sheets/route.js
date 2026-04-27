@@ -51,7 +51,7 @@ export async function POST(req) {
           // First chunk via GET (creates sheet with headers)
           const firstChunk = rows.slice(0, CHUNK)
           await getRequest({
-            action: 'syncAll',
+            action: 'writeSheet',
             data: encodeURIComponent(JSON.stringify({
               [sheetName]: { headers, rows: firstChunk }
             }))
