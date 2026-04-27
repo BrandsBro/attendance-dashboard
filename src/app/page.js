@@ -6,11 +6,17 @@ import Sidebar               from '@/components/Sidebar'
 import MetricsBar            from '@/components/MetricsBar'
 import SummaryTable          from '@/components/SummaryTable'
 import EmployeeDetail        from '@/components/EmployeeDetail'
-import SyncButton            from '@/components/SyncButton'
+import { useLeaveRecords }     from '@/hooks/useLeaveRecords'
+import { usePayrollSettings }   from '@/hooks/usePayrollSettings'
+import { loadRawRecords }       from '@/lib/storage'
 import GlobalSettingsPanel   from '@/components/GlobalSettingsPanel'
 
 export default function Dashboard() {
   const { summary, schedules, updateSchedule, updateLogoutOverride, processFile, status } = useAttendanceData()
+  const { records: leaveRecords }   = useLeaveRecords()
+  const { settings: payrollSettings } = usePayrollSettings()
+  const [syncing,      setSyncing]      = useState(false)
+  const [syncProgress, setSyncProgress] = useState('')
   const [selectedEmployee, setSelectedEmployee] = useState(null)
   const fileInputRef = useRef(null)
   const [selectedIds,      setSelectedIds]      = useState(new Set())
@@ -26,6 +32,62 @@ export default function Dashboard() {
       checked ? next.add(emp.userId) : next.delete(emp.userId)
       return next
     })
+  }
+
+  async function handleSyncToSheets() {
+    if (!summary) return
+    setSyncing(true)
+    try {
+      const rawRecords = loadRawRecords()
+      const employees  = summary.employees ?? []
+      const SCRIPT     = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430mbqbMs9P1uwrfwyGky95pY4QmcA3vd1TiHIE2ylG7x2uyxZu/exec'
+      const headers    = ['Serial No','User ID','Name','Department','Date/Time','Status']
+
+      // 1. Clear Attendance_Records
+      setSyncProgress('Clearing old records...')
+      await fetch('/api/sheets', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'syncAll', data:{ Attendance_Records:{ headers, rows:[] } } })
+      })
+
+      // 2. Send each employee's records
+      for (let i = 0; i < employees.length; i++) {
+        const emp = employees[i]
+        setSyncProgress(`Sending ${emp.name} (${i+1}/${employees.length})...`)
+        const empRecords = (rawRecords || []).filter(r => String(r.userId) === String(emp.userId))
+        if (empRecords.length === 0) continue
+        const rows = empRecords.map(r => ({
+          'Serial No':  String(r.serialNo ?? ''),
+          'User ID':    String(r.userId   || ''),
+          'Name':       String(r.name     || ''),
+          'Department': String(r.department || ''),
+          'Date/Time':  r.dateTime instanceof Date ? r.dateTime.toISOString() : String(r.dateTime || ''),
+          'Status':     String(r.status   || ''),
+        }))
+        const url = SCRIPT + '?action=appendRows&data=' + encodeURIComponent(JSON.stringify({ Attendance_Records: { headers, rows } }))
+        await fetch(url)
+      }
+
+      // 3. Sync summary
+      setSyncProgress('Syncing attendance summary...')
+      const sumRows = employees.map(e => ({
+        'User ID': String(e.userId||''), 'Name': String(e.name||''),
+        'Department': String(e.department||''), 'Shift': String(e.shift||''),
+        'Working Days': e.workingDays??0, 'Presence (min)': e.totalPresenceMinutes??0,
+        'Late (min)': e.totalLateMinutes??0, 'Overtime (min)': e.totalOvertimeMinutes??0,
+        'Late Days': e.lateDays??0, 'Last Updated': new Date().toISOString(),
+      }))
+      await fetch('/api/sheets', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'syncAll', data:{ Attendance_Summary:{ headers: Object.keys(sumRows[0]), rows: sumRows } } })
+      })
+
+      setSyncProgress('Done! ✓')
+      setTimeout(() => { setSyncing(false); setSyncProgress('') }, 2000)
+    } catch(e) {
+      setSyncProgress('Error: ' + e.message)
+      setTimeout(() => { setSyncing(false); setSyncProgress('') }, 3000)
+    }
   }
 
   return (
@@ -63,6 +125,12 @@ export default function Dashboard() {
             <input ref={fileInputRef} type="file" accept=".xls,.xlsx,.csv" style={{ display: 'none' }}
               onChange={async e => { const f = e.target.files?.[0]; if (f) { await processFile(f); e.target.value = '' } }} />
             <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>↑ Upload</button>
+            {summary && (
+              <button className="btn btn-primary" onClick={handleSyncToSheets} disabled={syncing}
+                style={{ minWidth: 160 }}>
+                {syncing ? syncProgress || 'Syncing...' : '⬆ Sync to Sheets'}
+              </button>
+            )}
           </div>
         </div>
         <div className="page-body">
