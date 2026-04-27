@@ -132,7 +132,7 @@ export function useAttendanceData() {
           'User ID':    String(r.userId    || ''),
           'Name':       String(r.name      || ''),
           'Department': String(r.department|| ''),
-          'Date/Time':  String(r.dateTime  || ''),
+          'Date/Time':  r.dateTime instanceof Date ? r.dateTime.toISOString() : String(r.dateTime || ''),
           'Status':     String(r.status    || ''),
         }))
 
