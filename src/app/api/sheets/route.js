@@ -68,7 +68,7 @@ export async function POST(req) {
             })
           }
 
-          results[sheetName] = { ok: true, rows: rows.length, chunks: Math.ceil(rows.length / CHUNK), r1 }
+          results[sheetName] = { ok: true, rows: rows.length, chunks: Math.ceil(rows.length / CHUNK) }
         } catch(e) {
           results[sheetName] = { ok: false, error: e.message }
         }
