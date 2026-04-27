@@ -1,5 +1,5 @@
 'use client'
-import { loadDashSettings } from '@/components/EmployeeDetail'
+import { loadDashSettings, saveDashSettings } from '@/components/EmployeeDetail'
 
 import { useState, useCallback, useEffect } from 'react'
 import { parseFile, parseCsv }              from '@/lib/parseAttendance'
@@ -118,6 +118,11 @@ export function useAttendanceData() {
       const s       = calculateStats(records, merged, 'upload', file.name, holidays, timeEdits)
       setSummary(s); setRawRecords(records); setSchedules(merged)
       persist(s, merged, holidays, timeEdits, records)
+      // Clear all row overrides on new upload — keep only global settings
+      const dashSetts = loadDashSettings()
+      const cleanSetts = { _global: dashSetts._global ?? {} }
+      saveDashSettings(cleanSetts)
+      window.dispatchEvent(new CustomEvent('dashSettingsChanged'))
       setStatus('done')
       // Auto sync to Google Sheets
       try {
