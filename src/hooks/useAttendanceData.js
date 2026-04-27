@@ -119,8 +119,8 @@ export function useAttendanceData() {
       setSummary(s); setRawRecords(records); setSchedules(merged)
       persist(s, merged, holidays, timeEdits, records)
       // Clear all row overrides on new upload — keep only global settings
-      const dashSetts = loadDashSettings()
-      const cleanSetts = { _global: dashSetts._global ?? {} }
+      const uploadDashSetts = loadDashSettings()
+      const cleanSetts = { _global: uploadDashSetts._global ?? {} }
       saveDashSettings(cleanSetts)
       window.dispatchEvent(new CustomEvent('dashSettingsChanged'))
       setStatus('done')
