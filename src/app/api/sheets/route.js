@@ -1,14 +1,38 @@
 import { NextResponse } from 'next/server'
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430mbqbMs9P1uwrfwyGky95pY4QmcA3vd1TiHIE2ylG7x2uyxZu/exec'
-const CHUNK_SIZE = 50
 
 async function getRequest(params) {
-  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString()
+  const url  = SCRIPT_URL + '?' + new URLSearchParams(params).toString()
   const res  = await fetch(url, { redirect: 'follow' })
   const text = await res.text()
-  try { return JSON.parse(text) }
-  catch { return { error: text } }
+  try { return JSON.parse(text) } catch { return { error: text } }
+}
+
+async function postRequest(body) {
+  // Step 1 - get redirect URL
+  const res1 = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    redirect: 'manual',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  
+  let targetUrl = SCRIPT_URL
+  if ([301,302,303,307,308].includes(res1.status)) {
+    const loc = res1.headers.get('location')
+    if (loc) targetUrl = loc
+  }
+
+  // Step 2 - POST to final URL
+  const res2 = await fetch(targetUrl, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const text = await res2.text()
+  try { return JSON.parse(text) } catch { return { error: text } }
 }
 
 export async function POST(req) {
@@ -17,36 +41,30 @@ export async function POST(req) {
 
     if (action === 'syncAll' && data) {
       const results = {}
+      const CHUNK   = 100
 
       for (const [sheetName, payload] of Object.entries(data)) {
         const { headers, rows } = payload
-
         if (!headers || !rows) continue
 
         try {
-          if (rows.length === 0) {
-            // Just write headers
-            const r = await getRequest({
-              action: 'syncAll',
-              data: encodeURIComponent(JSON.stringify({ [sheetName]: { headers, rows: [] } }))
-            })
-            results[sheetName] = r
-            continue
-          }
-
-          // First chunk — full write (clears sheet + writes headers + first rows)
-          const firstChunk = rows.slice(0, CHUNK_SIZE)
+          // First chunk via GET (creates sheet with headers)
+          const firstChunk = rows.slice(0, CHUNK)
           await getRequest({
             action: 'syncAll',
-            data: encodeURIComponent(JSON.stringify({ [sheetName]: { headers, rows: firstChunk } }))
+            data: encodeURIComponent(JSON.stringify({
+              [sheetName]: { headers, rows: firstChunk }
+            }))
           })
 
-          // Remaining chunks — append
-          for (let i = CHUNK_SIZE; i < rows.length; i += CHUNK_SIZE) {
-            const chunk = rows.slice(i, i + CHUNK_SIZE)
+          // Remaining chunks via GET append
+          for (let i = CHUNK; i < rows.length; i += CHUNK) {
+            const chunk = rows.slice(i, i + CHUNK)
             await getRequest({
               action: 'appendRows',
-              data: encodeURIComponent(JSON.stringify({ [sheetName]: { headers, rows: chunk } }))
+              data: encodeURIComponent(JSON.stringify({
+                [sheetName]: { headers, rows: chunk }
+              }))
             })
           }
 
@@ -59,7 +77,7 @@ export async function POST(req) {
       return NextResponse.json({ ok: true, results })
     }
 
-    // Single sheet sync
+    // Single sheet — use GET
     const r = await getRequest({
       action,
       data: encodeURIComponent(JSON.stringify(data))
@@ -76,10 +94,10 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url)
     const action = searchParams.get('action') || 'ping'
     const sheet  = searchParams.get('sheet')  || ''
-    const scriptUrl = sheet
+    const url    = sheet
       ? `${SCRIPT_URL}?action=${action}&sheet=${encodeURIComponent(sheet)}`
       : `${SCRIPT_URL}?action=${action}`
-    const res  = await fetch(scriptUrl, { redirect: 'follow' })
+    const res  = await fetch(url, { redirect: 'follow' })
     const text = await res.text()
     try { return NextResponse.json(JSON.parse(text)) }
     catch { return NextResponse.json({ error: text }) }
