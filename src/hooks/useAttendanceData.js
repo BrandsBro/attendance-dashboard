@@ -214,6 +214,11 @@ export function useAttendanceData() {
     setSummary(null); setSchedules({}); setHolidays([])
     setTimeEdits({}); setRawRecords(null)
     setStatus('idle'); setErrorMsg('')
+    // Clear row overrides but keep global settings
+    const dashSetts = loadDashSettings()
+    const cleanSetts = { _global: dashSetts._global ?? {} }
+    saveDashSettings(cleanSetts)
+    window.dispatchEvent(new CustomEvent('dashSettingsChanged'))
   }, [])
 
   return {
