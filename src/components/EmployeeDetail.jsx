@@ -197,12 +197,12 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
 
   function calcDayOT(d, rowLogout) {
     if (rowOverrides[d.date]?.otMinutes !== undefined) return rowOverrides[d.date].otMinutes
-    const outVal = d.outTime
-    if (!outVal) return 0
-    const outMs    = new Date(outVal).getTime()
+    if (!d.outTime) return 0
+    const out      = new Date(d.outTime)
+    const outMins  = out.getHours() * 60 + out.getMinutes()
     const [lh, lm] = rowLogout.split(':').map(Number)
-    const logoutMs = new Date(d.date + 'T00:00:00').setHours(lh, lm, 0, 0)
-    const diffMin  = Math.round((outMs - logoutMs) / 60000)
+    const logoutMins = lh * 60 + lm
+    const diffMin  = outMins - logoutMins
     const buffer   = empSetts.otBufferMins ?? global.otBufferMins ?? 30
     if (diffMin < buffer) return 0
     if (diffMin >= 60)    return diffMin
