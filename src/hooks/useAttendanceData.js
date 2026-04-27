@@ -168,12 +168,18 @@ export function useAttendanceData() {
         if (summaryRows.length > 0) data['Attendance_Summary']  = { headers: Object.keys(summaryRows[0]), rows: summaryRows }
         if (schedRows.length > 0)   data['Schedules']           = { headers: Object.keys(schedRows[0]),  rows: schedRows }
 
-        await fetch('/api/sheets', {
+        console.log('📊 Syncing sheets:', Object.keys(data))
+        console.log('📝 attRows count:', attRows.length)
+        console.log('📝 summaryRows count:', summaryRows.length)
+        console.log('📝 first attRow:', JSON.stringify(attRows[0]))
+
+        const syncRes = await fetch('/api/sheets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'syncAll', data })
         })
-        console.log('✅ Attendance data synced to Sheets')
+        const syncJson = await syncRes.json()
+        console.log('✅ Sync result:', JSON.stringify(syncJson))
       } catch(e) { console.warn('Auto-sync after upload failed:', e.message) }
     } catch (e) { setErrorMsg(String(e)); setStatus('error') }
   }, [schedules, holidays, timeEdits, settingsVer])
