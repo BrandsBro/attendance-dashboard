@@ -96,8 +96,9 @@ export default function Dashboard() {
 
           const fmt = t => {
             if (!t) return ''
-            const d = new Date(t)
-            return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0')
+            const dt = new Date(t)
+            // Convert UTC to local time display
+            return dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
           }
 
           return {
@@ -105,8 +106,8 @@ export default function Dashboard() {
             'Name':           emp.name,
             'Department':     emp.department ?? '',
             'Date':           d.date,
-            'Scheduled In':   isOff ? '' : login,
-            'Scheduled Out':  isOff ? '' : logout,
+            'Scheduled In':   isOff ? '' : (d.effectiveLogin  ?? login),
+            'Scheduled Out':  isOff ? '' : (d.effectiveLogout ?? logout),
             'Grace (min)':    isOff ? '' : grace,
             'Actual In':      fmt(d.inTime),
             'Actual Out':     fmt(d.outTime),
