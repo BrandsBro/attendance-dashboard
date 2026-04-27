@@ -209,7 +209,7 @@ export function useAttendanceData() {
     }
   }, [rawRecords, schedules, summary, timeEdits])
 
-  const clearData = useCallback(() => {
+  const clearData = useCallback(async () => {
     clearCache()
     setSummary(null); setSchedules({}); setHolidays([])
     setTimeEdits({}); setRawRecords(null)
@@ -219,6 +219,20 @@ export function useAttendanceData() {
     const cleanSetts = { _global: dashSetts._global ?? {} }
     saveDashSettings(cleanSetts)
     window.dispatchEvent(new CustomEvent('dashSettingsChanged'))
+    // Clear Google Sheets data tabs
+    try {
+      const sheetsToClean = ['Attendance_Records', 'Attendance_Summary', 'Schedules', 'Shift_Overrides', 'Sync_Log']
+      for (const sheet of sheetsToClean) {
+        await fetch('/api/sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'sync',
+            data: { [sheet]: { headers: [], rows: [] } }
+          })
+        })
+      }
+    } catch(e) { console.warn('Could not clear sheets:', e.message) }
   }, [])
 
   return {
