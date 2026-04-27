@@ -124,12 +124,56 @@ export function useAttendanceData() {
       saveDashSettings(cleanSetts)
       window.dispatchEvent(new CustomEvent('dashSettingsChanged'))
       setStatus('done')
-      // Auto sync to Google Sheets
+      // Auto sync ALL data to Google Sheets
       try {
-        await syncAll({
-          attendanceSummary: s,
-          schedules: merged,
+        // Build attendance records rows
+        const attRows = records.map(r => ({
+          'Serial No':  String(r.serialNo  ?? ''),
+          'User ID':    String(r.userId    || ''),
+          'Name':       String(r.name      || ''),
+          'Department': String(r.department|| ''),
+          'Date/Time':  String(r.dateTime  || ''),
+          'Status':     String(r.status    || ''),
+        }))
+
+        // Build summary rows
+        const summaryRows = s.employees.map(e => ({
+          'User ID':        String(e.userId               || ''),
+          'Name':           String(e.name                 || ''),
+          'Department':     String(e.department           || ''),
+          'Shift':          String(e.shift                || ''),
+          'Working Days':   Number(e.workingDays          ?? 0),
+          'Presence (min)': Number(e.totalPresenceMinutes ?? 0),
+          'Late (min)':     Number(e.totalLateMinutes     ?? 0),
+          'Overtime (min)': Number(e.totalOvertimeMinutes ?? 0),
+          'Late Days':      Number(e.lateDays             ?? 0),
+          'Date From':      String(s.dateRange?.from      || ''),
+          'Date To':        String(s.dateRange?.to        || ''),
+          'Last Updated':   new Date().toISOString(),
+        }))
+
+        // Build schedules rows
+        const schedRows = Object.values(merged).map(sc => ({
+          'User ID':     String(sc.userId              || ''),
+          'Name':        String(sc.name                || ''),
+          'Login Time':  String(sc.scheduledLoginTime  || '09:00'),
+          'Logout Time': String(sc.scheduledLogoutTime || '18:00'),
+          'Grace (min)': Number(sc.gracePeriodMinutes  ?? 0),
+          'Shift':       String(sc.shift               || ''),
+          'Last Updated': new Date().toISOString(),
+        }))
+
+        const data = {}
+        if (attRows.length > 0)     data['Attendance_Records']  = { headers: Object.keys(attRows[0]),    rows: attRows }
+        if (summaryRows.length > 0) data['Attendance_Summary']  = { headers: Object.keys(summaryRows[0]), rows: summaryRows }
+        if (schedRows.length > 0)   data['Schedules']           = { headers: Object.keys(schedRows[0]),  rows: schedRows }
+
+        await fetch('/api/sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'syncAll', data })
         })
+        console.log('✅ Attendance data synced to Sheets')
       } catch(e) { console.warn('Auto-sync after upload failed:', e.message) }
     } catch (e) { setErrorMsg(String(e)); setStatus('error') }
   }, [schedules, holidays, timeEdits, settingsVer])
