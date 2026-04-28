@@ -133,7 +133,7 @@ export default function Dashboard() {
       // STEP 2 — Clear sheet then send per employee via proxy
       await fetch('/api/sheets', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ action: 'syncAll', data: { Attendance_Records: { headers, rows: [] } } })
+        body: JSON.stringify({ action: 'writeSheet', data: { Attendance_Records: { headers, rows: [] } } })
       })
 
       let sent = 0
