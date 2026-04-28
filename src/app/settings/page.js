@@ -118,8 +118,7 @@ export default function SettingsPage() {
 
       const payload = {}
       if (syncEmp)   payload.employees          = profiles // sends all employees
-      if (syncAtt && rawRecords) {
-        payload.attendanceRecords = rawRecords
+      if (syncAtt && summary) {
         payload.attendanceSummary = summary
       }
       if (syncLeave)  payload.leaveRecords      = leaveRecords
