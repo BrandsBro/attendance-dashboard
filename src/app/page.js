@@ -37,95 +37,103 @@ export default function Dashboard() {
   async function handleSyncToSheets() {
     if (!summary) return
     setSyncing(true)
-    const SCRIPT = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430mbqbMs9P1uwrfwyGky95pY4QmcA3vd1TiHIE2ylG7x2uyxZu/exec'
+    const SCRIPT   = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430mbqbMs9P1uwrfwyGky95pY4QmcA3vd1TiHIE2ylG7x2uyxZu/exec'
     const dashSetts = JSON.parse(localStorage.getItem('dashboard_settings_v1') || '{}')
-    const global = dashSetts._global ?? {}
+    const global    = dashSetts._global ?? {}
 
     try {
+      // ── STEP 1: Collect all data ──────────────────────────
+      setSyncProgress('Collecting data...')
       const employees = summary.employees ?? []
-      const headers = [
+      const headers   = [
         'User ID','Name','Department','Date',
         'Scheduled In','Scheduled Out','Grace (min)',
         'Actual In','Actual Out',
-        'Presence (min)','Late (min)','OT (min)',
-        'Status'
+        'Presence (min)','Late (min)','OT (min)','Status'
       ]
 
-      // Step 1: Clear sheet
-      setSyncProgress('Clearing old records...')
-      await fetch('/api/sheets', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'syncAll', data:{ Attendance_Records:{ headers, rows:[] } } })
-      })
+      const allRows = []
 
-      // Step 2: Send each employee's days
-      for (let i = 0; i < employees.length; i++) {
-        const emp  = employees[i]
-        setSyncProgress(`Sending ${emp.name} (${i+1}/${employees.length})...`)
-        const empSetts = dashSetts[String(emp.userId)] ?? {}
-        const defLogin  = empSetts.loginTime   ?? global.loginTime   ?? '09:00'
-        const defLogout = empSetts.logoutTime  ?? global.logoutTime  ?? '18:00'
-        const defGrace  = empSetts.gracePeriod ?? global.gracePeriod ?? 0
+      for (const emp of employees) {
+        const empSetts  = dashSetts[String(emp.userId)] ?? {}
+        const defLogin  = empSetts.loginTime    ?? global.loginTime    ?? '09:00'
+        const defLogout = empSetts.logoutTime   ?? global.logoutTime   ?? '18:00'
+        const defGrace  = empSetts.gracePeriod  ?? global.gracePeriod  ?? 0
         const defOTBuf  = empSetts.otBufferMins ?? global.otBufferMins ?? 30
 
-        const rows = emp.days.map(d => {
-          const rowOverrides = dashSetts[String(emp.userId) + '_rows']?.[d.date] ?? {}
-          const login  = rowOverrides.loginTime   ?? defLogin
-          const logout = rowOverrides.logoutTime  ?? defLogout
-          const grace  = rowOverrides.gracePeriod ?? defGrace
-          const isOff  = d.isWeekend || d.isHoliday
+        for (const d of emp.days) {
+          const rowOvr   = dashSetts[String(emp.userId) + '_rows']?.[d.date] ?? {}
+          const login    = rowOvr.loginTime   ?? d.effectiveLogin  ?? defLogin
+          const logout   = rowOvr.logoutTime  ?? d.effectiveLogout ?? defLogout
+          const grace    = rowOvr.gracePeriod ?? defGrace
+          const isOff    = d.isWeekend || d.isHoliday
 
-          // Calc OT
-          let ot = 0
-          if (!isOff && d.outTime) {
-            const out = new Date(d.outTime)
-            const outMins = out.getHours() * 60 + out.getMinutes()
+          // Format time from ISO to HH:MM AM/PM
+          const fmt = t => {
+            if (!t) return ''
+            const dt = new Date(t)
+            return dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+          }
+
+          // Calculate OT
+          let ot = rowOvr.otMinutes ?? 0
+          if (!ot && !isOff && d.outTime) {
+            const out      = new Date(d.outTime)
+            const outMins  = out.getHours() * 60 + out.getMinutes()
             const [lh, lm] = logout.split(':').map(Number)
-            const logoutMins = lh * 60 + lm
-            const diff = outMins - logoutMins
-            if (diff >= 60) ot = diff
+            const diff     = outMins - (lh * 60 + lm)
+            if (diff >= 60)      ot = diff
             else if (diff >= defOTBuf) ot = diff - defOTBuf
           }
 
           // Status
           let status = 'Present'
-          if (isOff) status = d.isHoliday ? 'Holiday' : 'Weekend'
+          if (isOff)        status = d.isHoliday ? 'Holiday' : 'Weekend'
           else if (!d.inTime) status = 'Absent'
           else if (d.lateMinutes > 0) status = 'Late'
 
-          const fmt = t => {
-            if (!t) return ''
-            const dt = new Date(t)
-            // Convert UTC to local time display
-            return dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-          }
-
-          return {
+          allRows.push({
             'User ID':        String(emp.userId),
             'Name':           emp.name,
             'Department':     emp.department ?? '',
             'Date':           d.date,
-            'Scheduled In':   isOff ? '' : (d.effectiveLogin  ?? login),
-            'Scheduled Out':  isOff ? '' : (d.effectiveLogout ?? logout),
-            'Grace (min)':    isOff ? '' : grace,
+            'Scheduled In':   isOff ? '' : login,
+            'Scheduled Out':  isOff ? '' : logout,
+            'Grace (min)':    isOff ? 0 : grace,
             'Actual In':      fmt(d.inTime),
             'Actual Out':     fmt(d.outTime),
-            'Presence (min)': d.presenceMinutes ?? 0,
-            'Late (min)':     d.lateMinutes ?? 0,
+            'Presence (min)': d.presenceMinutes   ?? 0,
+            'Late (min)':     d.lateMinutes        ?? 0,
             'OT (min)':       ot,
             'Status':         status,
-          }
-        })
-
-        const url = SCRIPT + '?action=appendRows&data=' + encodeURIComponent(JSON.stringify({
-          Attendance_Records: { headers, rows }
-        }))
-        await fetch(url)
+          })
+        }
       }
 
-      setSyncProgress('Done! ✓')
+      setSyncProgress(`Collected ${allRows.length} rows from ${employees.length} employees`)
+      await new Promise(r => setTimeout(r, 500))
+
+      // ── STEP 2: Send to Google Sheets ─────────────────────
+      // Clear first
+      setSyncProgress('Clearing old data in Sheets...')
+      await fetch(SCRIPT + '?action=writeSheet&data=' + encodeURIComponent(JSON.stringify({
+        Attendance_Records: { headers, rows: [] }
+      })))
+
+      // Send in batches of 30 rows per employee group
+      let sent = 0
+      for (const emp of employees) {
+        const empRows = allRows.filter(r => r['User ID'] === String(emp.userId))
+        if (empRows.length === 0) continue
+        setSyncProgress(`Sending ${emp.name} (${++sent}/${employees.length})...`)
+        await fetch(SCRIPT + '?action=appendRows&data=' + encodeURIComponent(JSON.stringify({
+          Attendance_Records: { headers, rows: empRows }
+        })))
+      }
+
+      setSyncProgress('✓ All data synced to Google Sheets!')
       setTimeout(() => { setSyncing(false); setSyncProgress('') }, 2000)
+
     } catch(e) {
       setSyncProgress('Error: ' + e.message)
       setTimeout(() => { setSyncing(false); setSyncProgress('') }, 3000)
