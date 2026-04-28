@@ -144,7 +144,6 @@ export default function Dashboard() {
           body: JSON.stringify({ action: 'appendRows', data: { Attendance_Records: { headers, rows: [allRows[i]] } } })
         })
       }
-      }
 
       setSyncProgress('✓ Done! All data synced to Google Sheets')
       setTimeout(() => { setSyncing(false); setSyncProgress('') }, 2000)
