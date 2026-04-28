@@ -20,6 +20,92 @@ export function useAttendanceData() {
   const [errorMsg,    setErrorMsg]    = useState('')
 
   // Listen for dashboard settings changes
+  // On load — if no local data, try fetching from Sheets
+  useEffect(() => {
+    async function fetchFromSheets() {
+      try {
+        const res  = await fetch('/api/sheets?action=read&sheet=Attendance_Records')
+        const data = await res.json()
+        if (!data.rows || data.rows.length === 0) return
+
+        // Convert sheet rows back to summary format
+        const empMap = {}
+        for (const row of data.rows) {
+          const uid = String(row['User ID'] || '')
+          if (!uid) continue
+          if (!empMap[uid]) {
+            empMap[uid] = {
+              userId: uid,
+              name: row['Name'] || '',
+              department: row['Department'] || '',
+              shift: '',
+              days: [],
+              workingDays: 0,
+              totalPresenceMinutes: 0,
+              totalLateMinutes: 0,
+              totalOvertimeMinutes: 0,
+              lateDays: 0,
+            }
+          }
+          const isOff = row['Status'] === 'Weekend' || row['Status'] === 'Holiday'
+          const parseMin = s => {
+            if (!s) return 0
+            const h = (s.match(/(d+)h/) || [0,0])[1]
+            const m = (s.match(/(d+)m/) || [0,0])[1]
+            return +h * 60 + +m
+          }
+          const presence = parseMin(row['Presence'])
+          const late     = parseMin(row['Late'])
+          const ot       = parseMin(row['OT'])
+          empMap[uid].days.push({
+            date: row['Date'] || '',
+            inTime: null,
+            outTime: null,
+            presenceMinutes: presence,
+            lateMinutes: late,
+            overtimeMinutes: ot,
+            isWeekend: row['Status'] === 'Weekend',
+            isHoliday: row['Status'] === 'Holiday',
+            effectiveLogin: row['Scheduled In'] || '09:00',
+            effectiveLogout: row['Scheduled Out'] || '18:00',
+          })
+          if (!isOff && row['Status'] !== 'Absent') {
+            empMap[uid].workingDays++
+            empMap[uid].totalPresenceMinutes += presence
+          }
+          empMap[uid].totalLateMinutes    += late
+          empMap[uid].totalOvertimeMinutes += ot
+          if (late > 0) empMap[uid].lateDays++
+        }
+
+        const employees = Object.values(empMap)
+        if (employees.length === 0) return
+
+        const allDates = data.rows.map(r => r['Date']).filter(Boolean).sort()
+        const s = {
+          employees,
+          source: 'sheets',
+          sourceLabel: 'Google Sheets',
+          dateRange: { from: allDates[0], to: allDates[allDates.length-1] },
+          totalPresenceMinutes: employees.reduce((a,e) => a + e.totalPresenceMinutes, 0),
+          totalLateMinutes:     employees.reduce((a,e) => a + e.totalLateMinutes, 0),
+          totalOvertimeMinutes: employees.reduce((a,e) => a + e.totalOvertimeMinutes, 0),
+        }
+        setSummary(s)
+        setStatus('done')
+        console.log('✅ Loaded from Google Sheets:', employees.length, 'employees')
+      } catch(e) {
+        console.warn('Could not load from Sheets:', e.message)
+      }
+    }
+
+    // Only fetch from sheets if no local data
+    const cached = loadCache()
+    if (!cached?.summary) {
+      fetchFromSheets()
+    }
+  }, [])
+
   useEffect(() => {
     function onSettingsChange() { setSettingsVer(v => v + 1) }
     window.addEventListener('dashSettingsChanged', onSettingsChange)
