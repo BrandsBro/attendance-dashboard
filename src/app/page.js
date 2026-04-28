@@ -130,21 +130,20 @@ export default function Dashboard() {
       setSyncProgress(`✓ Collected ${allRows.length} rows — sending to Sheets...`)
       await new Promise(r => setTimeout(r, 400))
 
-      // STEP 2 — Clear sheet then send per employee via proxy
+      // STEP 2 — Clear sheet first
+      setSyncProgress('Clearing old data...')
       await fetch('/api/sheets', {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ action: 'writeSheet', data: { Attendance_Records: { headers, rows: [] } } })
       })
-
-      let sent = 0
-      for (const emp of employees) {
-        const empRows = allRows.filter(r => r['User ID'] === String(emp.userId))
-        if (empRows.length === 0) continue
-        setSyncProgress(`Sending ${emp.name} (${++sent}/${employees.length})...`)
+      // STEP 3 — Send one row at a time
+      for (let i = 0; i < allRows.length; i++) {
+        setSyncProgress('Sending row ' + (i+1) + ' of ' + allRows.length + ' (' + allRows[i]['Name'] + ')...')
         await fetch('/api/sheets', {
           method: 'POST', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ action: 'appendRows', data: { Attendance_Records: { headers, rows: empRows } } })
+          body: JSON.stringify({ action: 'appendRows', data: { Attendance_Records: { headers, rows: [allRows[i]] } } })
         })
+      }
       }
 
       setSyncProgress('✓ Done! All data synced to Google Sheets')
