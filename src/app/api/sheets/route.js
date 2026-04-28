@@ -13,6 +13,13 @@ export async function POST(req) {
   try {
     const { action, data } = await req.json()
 
+    if (action === 'appendRows' && data) {
+      const r = await getReq({
+        action: 'appendRows',
+        data: encodeURIComponent(JSON.stringify(data))
+      })
+      return NextResponse.json(r)
+    }
     if (action === 'syncAll' && data) {
       const results = {}
 

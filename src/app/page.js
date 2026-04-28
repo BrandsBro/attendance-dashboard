@@ -37,7 +37,6 @@ export default function Dashboard() {
   async function handleSyncToSheets() {
     if (!summary) return
     setSyncing(true)
-    const SCRIPT    = 'https://script.google.com/macros/s/AKfycbwR5oiVUx6Uv8iVd430mbqbMs9P1uwrfwyGky95pY4QmcA3vd1TiHIE2ylG7x2uyxZu/exec'
     const dashSetts = JSON.parse(localStorage.getItem('dashboard_settings_v1') || '{}')
     const global    = dashSetts._global ?? {}
 
@@ -131,19 +130,21 @@ export default function Dashboard() {
       setSyncProgress(`✓ Collected ${allRows.length} rows — sending to Sheets...`)
       await new Promise(r => setTimeout(r, 400))
 
-      // STEP 2 — Clear sheet then send per employee
-      await fetch(SCRIPT + '?action=writeSheet&data=' + encodeURIComponent(JSON.stringify({
-        Attendance_Records: { headers, rows: [] }
-      })))
+      // STEP 2 — Clear sheet then send per employee via proxy
+      await fetch('/api/sheets', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ action: 'syncAll', data: { Attendance_Records: { headers, rows: [] } } })
+      })
 
       let sent = 0
       for (const emp of employees) {
         const empRows = allRows.filter(r => r['User ID'] === String(emp.userId))
         if (empRows.length === 0) continue
         setSyncProgress(`Sending ${emp.name} (${++sent}/${employees.length})...`)
-        await fetch(SCRIPT + '?action=appendRows&data=' + encodeURIComponent(JSON.stringify({
-          Attendance_Records: { headers, rows: empRows }
-        })))
+        await fetch('/api/sheets', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ action: 'appendRows', data: { Attendance_Records: { headers, rows: empRows } } })
+        })
       }
 
       setSyncProgress('✓ Done! All data synced to Google Sheets')
