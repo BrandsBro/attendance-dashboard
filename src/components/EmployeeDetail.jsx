@@ -102,6 +102,7 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
   }
 
   async function syncRowToSheets(date, overrides = {}) {
+    console.log('🔄 syncRowToSheets called:', date, overrides)
     try {
       const dashSetts = loadDashSettings()
       const global    = dashSetts._global ?? {}
@@ -167,7 +168,8 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
         'Status':        status,
       }
 
-      await fetch('/api/sheets', {
+      console.log('📤 Sending to Sheets:', JSON.stringify({ action: 'updateRow', sheet: 'Attendance_Records', keyValue: String(emp.userId), dateValue: date }))
+      const res = await fetch('/api/sheets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -180,8 +182,10 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
           row,
         })
       })
+      const result = await res.json()
+      console.log('✅ Sheet update result:', JSON.stringify(result))
     } catch(e) {
-      console.warn('Sheet sync failed:', e.message)
+      console.warn('❌ Sheet sync failed:', e.message)
     }
   }
 
