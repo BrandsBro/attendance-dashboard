@@ -133,6 +133,7 @@ export function useAttendanceData() {
     // Only fetch from sheets if no local data
     const cached = loadCache()
     if (!cached?.summary) {
+      setStatus('loading')
       fetchFromSheets()
     }
   }, [])
