@@ -42,8 +42,9 @@ export function useAttendanceData() {
           if (!d) return ''
           const s = String(d)
           if (s.includes('T')) {
+            // Google Sheets UTC date — add 6 hours for BD timezone
             const dt = new Date(s)
-            dt.setHours(dt.getHours() + 6)
+            dt.setUTCHours(dt.getUTCHours() + 6)
             return dt.toISOString().slice(0, 10)
           }
           const match = s.match(/^(\d{4}-\d{2}-\d{2})/)
@@ -53,7 +54,19 @@ export function useAttendanceData() {
         const timeToISO = (dateStr, timeStr) => {
           if (!timeStr || timeStr === '' || timeStr === '0') return null
           try {
-            const dt = new Date(dateStr + ' ' + timeStr)
+            const s = String(timeStr)
+            // Google Sheets returns times as 1899-12-30T... ISO strings
+            if (s.includes('1899-12-30')) {
+              const t   = new Date(s)
+              // Extract hours/minutes in UTC and apply to correct date
+              const h   = t.getUTCHours()
+              const m   = t.getUTCMinutes()
+              const dt  = new Date(dateStr + 'T00:00:00.000Z')
+              dt.setUTCHours(h, m, 0, 0)
+              return dt.toISOString()
+            }
+            // Regular time string like "10:07 AM"
+            const dt = new Date(dateStr + ' ' + s)
             if (isNaN(dt.getTime())) return null
             return dt.toISOString()
           } catch { return null }
