@@ -145,7 +145,11 @@ export default function Dashboard() {
         })
       }
 
-      setSyncProgress('✓ Done! All data synced to Google Sheets')
+      setSyncProgress('✓ Synced! Clearing local cache...')
+      // Clear localStorage attendance data — Sheets is now master
+      const keysToKeep = ['dashboard_settings_v1', 'hr_dropdown_options_v1', 'employee_profiles_v1', 'payroll_settings_v1', 'leave_records_v1']
+      Object.keys(localStorage).forEach(k => { if (!keysToKeep.includes(k)) localStorage.removeItem(k) })
+      setSyncProgress('✓ Done! Data synced and local cache cleared')
       setTimeout(() => { setSyncing(false); setSyncProgress('') }, 2000)
 
     } catch(e) {
