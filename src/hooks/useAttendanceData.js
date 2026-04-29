@@ -30,15 +30,47 @@ export function useAttendanceData() {
 
         // Convert sheet rows back to summary format
         const empMap = {}
+
+        const parseMin = s => {
+          if (!s || s === '0m') return 0
+          const h = parseInt((String(s).match(/(\d+)h/) || [0,0])[1]) || 0
+          const m = parseInt((String(s).match(/(\d+)m/) || [0,0])[1]) || 0
+          return h * 60 + m
+        }
+
+        const fixDate = d => {
+          if (!d) return ''
+          const s = String(d)
+          if (s.includes('T')) {
+            const dt = new Date(s)
+            dt.setHours(dt.getHours() + 6)
+            return dt.toISOString().slice(0, 10)
+          }
+          const match = s.match(/^(\d{4}-\d{2}-\d{2})/)
+          return match ? match[1] : s
+        }
+
+        const timeToISO = (dateStr, timeStr) => {
+          if (!timeStr || timeStr === '' || timeStr === '0') return null
+          try {
+            const dt = new Date(dateStr + ' ' + timeStr)
+            if (isNaN(dt.getTime())) return null
+            return dt.toISOString()
+          } catch { return null }
+        }
+
         for (const row of data.rows) {
-          const uid = String(row['User ID'] || '')
+          const uid  = String(row['User ID'] || '').trim()
           if (!uid) continue
+          const date = fixDate(row['Date'])
+          if (!date) continue
+
           if (!empMap[uid]) {
             empMap[uid] = {
               userId: uid,
-              name: row['Name'] || '',
-              department: row['Department'] || '',
-              shift: '',
+              name: String(row['Name'] || ''),
+              department: String(row['Department'] || ''),
+              shift: String(row['Shift'] || ''),
               days: [],
               workingDays: 0,
               totalPresenceMinutes: 0,
@@ -47,33 +79,32 @@ export function useAttendanceData() {
               lateDays: 0,
             }
           }
-          const isOff = row['Status'] === 'Weekend' || row['Status'] === 'Holiday'
-          const parseMin = s => {
-            if (!s) return 0
-            const h = (s.match(/(d+)h/) || [0,0])[1]
-            const m = (s.match(/(d+)m/) || [0,0])[1]
-            return +h * 60 + +m
-          }
+
+          const isOff    = row['Status'] === 'Weekend' || row['Status'] === 'Holiday'
           const presence = parseMin(row['Presence'])
           const late     = parseMin(row['Late'])
           const ot       = parseMin(row['OT'])
+
           empMap[uid].days.push({
-            date: row['Date'] || '',
-            inTime: null,
-            outTime: null,
+            date,
+            inTime:          timeToISO(date, row['In']),
+            outTime:         timeToISO(date, row['Out']),
             presenceMinutes: presence,
-            lateMinutes: late,
+            lateMinutes:     late,
             overtimeMinutes: ot,
-            isWeekend: row['Status'] === 'Weekend',
-            isHoliday: row['Status'] === 'Holiday',
-            effectiveLogin: row['Scheduled In'] || '09:00',
+            isWeekend:       row['Status'] === 'Weekend',
+            isHoliday:       row['Status'] === 'Holiday',
+            effectiveLogin:  row['Scheduled In']  || '09:00',
             effectiveLogout: row['Scheduled Out'] || '18:00',
+            manualIn: false,
+            manualOut: false,
           })
+
           if (!isOff && row['Status'] !== 'Absent') {
             empMap[uid].workingDays++
             empMap[uid].totalPresenceMinutes += presence
           }
-          empMap[uid].totalLateMinutes    += late
+          empMap[uid].totalLateMinutes     += late
           empMap[uid].totalOvertimeMinutes += ot
           if (late > 0) empMap[uid].lateDays++
         }
