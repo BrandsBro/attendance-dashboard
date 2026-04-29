@@ -58,14 +58,11 @@ export function useAttendanceData() {
             // Google Sheets returns times as 1899-12-29 or 1899-12-30 ISO strings
             if (s.includes('1899-12-')) {
               const t = new Date(s)
-              const h = t.getUTCHours()
-              const m = t.getUTCMinutes()
-              // Add 6 hours for BD timezone
-              const totalMins = h * 60 + m + 360
-              const adjH = Math.floor(totalMins / 60) % 24
-              const adjM = totalMins % 60
-              const dt = new Date(dateStr + 'T00:00:00.000Z')
-              dt.setUTCHours(adjH, adjM, 0, 0)
+              // Use local hours/minutes directly (browser is in user's timezone)
+              const h = t.getHours()
+              const m = t.getMinutes()
+              const dt = new Date(dateStr + 'T00:00:00')
+              dt.setHours(h, m, 0, 0)
               return dt.toISOString()
             }
             // Regular time string like "10:07 AM"
