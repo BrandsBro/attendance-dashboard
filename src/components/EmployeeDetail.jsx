@@ -101,7 +101,7 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
     saveDashSettings(updated)
   }
 
-  async function syncRowToSheets(date) {
+  async function syncRowToSheets(date, overrides = {}) {
     try {
       const dashSetts = loadDashSettings()
       const global    = dashSetts._global ?? {}
@@ -115,8 +115,9 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
       const login  = rowOvr.loginTime   ?? defLogin
       const logout = rowOvr.logoutTime  ?? defLogout
       const grace  = rowOvr.gracePeriod ?? defGrace
-      const d      = emp.days.find(d => d.date === date)
-      if (!d) return
+      const baseDay = emp.days.find(d => d.date === date)
+      if (!baseDay) return
+      const d = { ...baseDay, ...overrides }
 
       const isOff = d.isWeekend || d.isHoliday
       const fmtShift = t => {
@@ -192,8 +193,8 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
     setTimeout(() => syncRowToSheets(date), 100)
   }
 
-  function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in');  onUpdateDay?.(emp.userId, date, 'inTime', iso);  setTimeout(() => syncRowToSheets(date), 500) }
-  function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out'); onUpdateDay?.(emp.userId, date, 'outTime', iso); setTimeout(() => syncRowToSheets(date), 500) }
+  function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in');  onUpdateDay?.(emp.userId, date, 'inTime', iso);  setTimeout(() => syncRowToSheets(date, { inTime: iso }), 500) }
+  function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out'); onUpdateDay?.(emp.userId, date, 'outTime', iso); setTimeout(() => syncRowToSheets(date, { outTime: iso }), 500) }
 
   function downloadCSV() {
     // Single employee totals only
