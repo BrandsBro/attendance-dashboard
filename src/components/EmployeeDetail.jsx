@@ -101,15 +101,99 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
     saveDashSettings(updated)
   }
 
+  async function syncRowToSheets(date) {
+    try {
+      const dashSetts = loadDashSettings()
+      const global    = dashSetts._global ?? {}
+      const empSetts  = dashSetts[String(emp.userId)] ?? {}
+      const rowOvr    = dashSetts[String(emp.userId) + '_rows']?.[date] ?? {}
+      const defLogin  = empSetts.loginTime   ?? global.loginTime   ?? '09:00'
+      const defLogout = empSetts.logoutTime  ?? global.logoutTime  ?? '18:00'
+      const defGrace  = empSetts.gracePeriod ?? global.gracePeriod ?? 0
+      const defOTBuf  = empSetts.otBufferMins ?? global.otBufferMins ?? 30
+
+      const login  = rowOvr.loginTime   ?? defLogin
+      const logout = rowOvr.logoutTime  ?? defLogout
+      const grace  = rowOvr.gracePeriod ?? defGrace
+      const d      = emp.days.find(d => d.date === date)
+      if (!d) return
+
+      const isOff = d.isWeekend || d.isHoliday
+      const fmtShift = t => {
+        if (!t) return ''
+        const [h, m] = t.split(':').map(Number)
+        return (h % 12 || 12) + ':' + String(m).padStart(2,'0') + ' ' + (h >= 12 ? 'PM' : 'AM')
+      }
+      const fmtTime = t => {
+        if (!t) return ''
+        const dt = new Date(t)
+        const h = dt.getHours(), m = dt.getMinutes()
+        return (h % 12 || 12) + ':' + String(m).padStart(2,'0') + ' ' + (h >= 12 ? 'PM' : 'AM')
+      }
+      const fmtMin = mins => {
+        if (!mins) return '0m'
+        const h = Math.floor(mins / 60), m = mins % 60
+        return h > 0 ? (m > 0 ? h + 'h ' + m + 'm' : h + 'h') : m + 'm'
+      }
+
+      let otMins = rowOvr.otMinutes ?? 0
+      if (!otMins && !isOff && d.outTime) {
+        const out = new Date(d.outTime)
+        const outMins = out.getHours() * 60 + out.getMinutes()
+        const [lh, lm] = logout.split(':').map(Number)
+        const diff = outMins - (lh * 60 + lm)
+        if (diff >= 60) otMins = diff
+        else if (diff >= defOTBuf) otMins = diff - defOTBuf
+      }
+
+      let status = 'Present'
+      if (isOff) status = d.isHoliday ? 'Holiday' : 'Weekend'
+      else if (!d.inTime) status = 'Absent'
+      else if (d.lateMinutes > 0) status = 'Late'
+
+      const row = {
+        'User ID':       String(emp.userId),
+        'Name':          emp.name,
+        'Department':    emp.department ?? '',
+        'Date':          date,
+        'Shift':         isOff ? '' : fmtShift(login) + ' → ' + fmtShift(logout),
+        'In':            fmtTime(d.inTime),
+        'Out':           fmtTime(d.outTime),
+        'Grace':         isOff ? '' : grace + 'm',
+        'Presence':      isOff ? '' : fmtMin(d.presenceMinutes),
+        'Late':          isOff ? '' : fmtMin(d.lateMinutes),
+        'OT':            isOff ? '' : fmtMin(otMins),
+        'Status':        status,
+      }
+
+      await fetch('/api/sheets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'updateRow',
+          sheet: 'Attendance_Records',
+          keyColumn: 'User ID',
+          keyValue: String(emp.userId),
+          dateColumn: 'Date',
+          dateValue: date,
+          row,
+        })
+      })
+    } catch(e) {
+      console.warn('Sheet sync failed:', e.message)
+    }
+  }
+
   function saveRowOverride(date, field, val) {
     const next = { ...rowOverrides, [date]: { ...(rowOverrides[date] ?? {}), [field]: val } }
     setRowOverrides(next)
     const s = loadDashSettings()
     saveDashSettings({ ...s, [emp.userId + '_rows']: next })
+    setTimeout(() => syncRowToSheets(date), 100)
   }
 
-  function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in')  }
-  function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out') }
+  function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in');  setTimeout(() => syncRowToSheets(date), 500) }
+  function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out'); setTimeout(() => syncRowToSheets(date), 500) }
 
   function downloadCSV() {
     // Single employee totals only

@@ -11,57 +11,52 @@ async function getReq(params) {
 
 export async function POST(req) {
   try {
-    const { action, data } = await req.json()
+    const body   = await req.json()
+    const action = body.action
+    const data   = body.data
 
-    if (action === 'appendRows' && data) {
-      const r = await getReq({
-        action: 'appendRows',
-        data: encodeURIComponent(JSON.stringify(data))
-      })
-      return NextResponse.json(r)
-    }
     if (action === 'syncAll' && data) {
       const results = {}
-
+      const CHUNK   = 100
       for (const [sheetName, payload] of Object.entries(data)) {
         const { headers, rows } = payload
         if (!headers || !rows) continue
-
         try {
-          // Step 1: Clear and write headers only
-          await getReq({
-            action: 'writeSheet',
-            data: encodeURIComponent(JSON.stringify({
-              [sheetName]: { headers, rows: [] }
-            }))
-          })
-
-          // Step 2: Append all rows in batches of 20
-          const BATCH = 20
-          for (let i = 0; i < rows.length; i += BATCH) {
-            const batch = rows.slice(i, i + BATCH)
-            await getReq({
-              action: 'appendRows',
-              data: encodeURIComponent(JSON.stringify({
-                [sheetName]: { headers, rows: batch }
-              }))
-            })
+          const firstChunk = rows.slice(0, CHUNK)
+          await getReq({ action: 'writeSheet', data: encodeURIComponent(JSON.stringify({ [sheetName]: { headers, rows: firstChunk } })) })
+          for (let i = CHUNK; i < rows.length; i += CHUNK) {
+            await getReq({ action: 'appendRows', data: encodeURIComponent(JSON.stringify({ [sheetName]: { headers, rows: rows.slice(i, i+CHUNK) } })) })
           }
-
           results[sheetName] = { ok: true, rows: rows.length }
-        } catch(e) {
-          results[sheetName] = { ok: false, error: e.message }
-        }
+        } catch(e) { results[sheetName] = { ok: false, error: e.message } }
       }
-
       return NextResponse.json({ ok: true, results })
     }
 
-    // Other actions
-    const r = await getReq({
-      action,
-      data: encodeURIComponent(JSON.stringify(data))
-    })
+    if (action === 'appendRows' && data) {
+      const r = await getReq({ action: 'appendRows', data: encodeURIComponent(JSON.stringify(data)) })
+      return NextResponse.json(r)
+    }
+
+    if (action === 'writeSheet' && data) {
+      const r = await getReq({ action: 'writeSheet', data: encodeURIComponent(JSON.stringify(data)) })
+      return NextResponse.json(r)
+    }
+
+    if (action === 'updateRow') {
+      const r = await getReq({
+        action:      'updateRow',
+        sheet:       body.sheet,
+        keyColumn:   body.keyColumn,
+        keyValue:    body.keyValue,
+        dateColumn:  body.dateColumn,
+        dateValue:   body.dateValue,
+        data:        encodeURIComponent(JSON.stringify(body.row))
+      })
+      return NextResponse.json(r)
+    }
+
+    const r = await getReq({ action, data: encodeURIComponent(JSON.stringify(data)) })
     return NextResponse.json(r)
 
   } catch(e) {
