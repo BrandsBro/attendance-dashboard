@@ -23,7 +23,7 @@ export default function Dashboard() {
   const [recalcTick,       setRecalcTick]       = useState(0)
 
   const liveEmployee = selectedEmployee
-    ? summary?.employees.find(e => e.userId === selectedEmployee.userId) ?? selectedEmployee
+    ? (summary?.employees ?? []).find(e => String(e.userId) === String(selectedEmployee.userId)) ?? selectedEmployee
     : null
 
   function toggleSelect(emp, checked) {
