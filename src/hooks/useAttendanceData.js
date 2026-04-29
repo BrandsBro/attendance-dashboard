@@ -125,7 +125,7 @@ export function useAttendanceData() {
         const employees = Object.values(empMap)
         if (employees.length === 0) return
 
-        const allDates = data.rows.map(r => r['Date']).filter(Boolean).sort()
+        const allDates = data.rows.map(r => fixDate(r['Date'])).filter(Boolean).sort()
         const s = {
           employees,
           source: 'sheets',
