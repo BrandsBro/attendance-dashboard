@@ -77,7 +77,7 @@ function EditableNum({ value, min = 0, step = 1, suffix = '', onSave }) {
   )
 }
 
-export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverride, onClose, onRecalculate }) {
+export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverride, onClose, onRecalculate, onUpdateDay }) {
   const schedule = schedules?.[emp.userId]
   const [settings, setSettings] = useState(() => loadDashSettings())
   const [rowOverrides, setRowOverrides] = useState(() => {
@@ -192,8 +192,8 @@ export default function EmployeeDetail({ employee: emp, schedules, onLogoutOverr
     setTimeout(() => syncRowToSheets(date), 100)
   }
 
-  function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in');  setTimeout(() => syncRowToSheets(date), 500) }
-  function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out'); setTimeout(() => syncRowToSheets(date), 500) }
+  function saveIn(date, iso)  { onLogoutOverride(emp.userId, date, iso, false, false, 'in');  onUpdateDay?.(emp.userId, date, 'inTime', iso);  setTimeout(() => syncRowToSheets(date), 500) }
+  function saveOut(date, iso) { onLogoutOverride(emp.userId, date, iso, false, false, 'out'); onUpdateDay?.(emp.userId, date, 'outTime', iso); setTimeout(() => syncRowToSheets(date), 500) }
 
   function downloadCSV() {
     // Single employee totals only

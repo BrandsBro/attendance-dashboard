@@ -12,7 +12,7 @@ import { loadRawRecords }       from '@/lib/storage'
 import GlobalSettingsPanel   from '@/components/GlobalSettingsPanel'
 
 export default function Dashboard() {
-  const { summary, schedules, updateSchedule, updateLogoutOverride, processFile, status } = useAttendanceData()
+  const { summary, schedules, updateSchedule, updateLogoutOverride, processFile, status, updateDayInSummary } = useAttendanceData()
   const { records: leaveRecords }   = useLeaveRecords()
   const { settings: payrollSettings } = usePayrollSettings()
   const [syncing,      setSyncing]      = useState(false)
@@ -241,6 +241,7 @@ export default function Dashboard() {
           schedules={schedules}
           onLogoutOverride={updateLogoutOverride}
           onClose={() => setSelectedEmployee(null)}
+          onUpdateDay={updateDayInSummary}
           onRecalculate={() => { window.dispatchEvent(new CustomEvent('dashSettingsChanged')); setRecalcTick(t => t + 1) }}
         />
       )}

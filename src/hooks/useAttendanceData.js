@@ -359,9 +359,28 @@ export function useAttendanceData() {
     } catch(e) { console.warn('Could not clear sheets:', e.message) }
   }, [])
 
+  function updateDayInSummary(userId, date, field, value) {
+    setSummary(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        employees: prev.employees.map(emp => {
+          if (String(emp.userId) !== String(userId)) return emp
+          return {
+            ...emp,
+            days: emp.days.map(d => {
+              if (d.date !== date) return d
+              return { ...d, [field]: value }
+            })
+          }
+        })
+      }
+    })
+  }
+
   return {
     summary, schedules, holidays, status, errorMsg,
-    processFile, processSheetUrl, updateSchedule,
+    processFile, processSheetUrl, updateSchedule, updateDayInSummary,
     updateLogoutOverride, updateHolidays, clearData,
   }
 }
